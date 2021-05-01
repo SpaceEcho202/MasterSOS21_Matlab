@@ -1,0 +1,20 @@
+classdef Numerlogy
+    %Numerlogy Class is used to assigne subcarrier to dedicated bandwidth
+    %   This class will perform all steps to create signal vector and
+    %   frames 
+    
+    properties
+        bandwidth
+        modulation_order
+        code_rate
+        frame_count
+    end
+    
+    methods(Static)
+        function symbols = symbol_mapper(modulation_order, gray_coding, ...
+                bit_stream)
+            [y, map] = bin2gray()
+        end      
+    end
+end
+
