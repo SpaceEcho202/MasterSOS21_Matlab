@@ -4,13 +4,12 @@ classdef Numerlogy
     %   frames
     
     properties
-        bandwidth
-        modulation_order
-        code_rate
-        frame_count
-        bit_stream
+        BandWidth       = [] %Used transmission bandwidth
+        ModulationOrder = 4  %Used QAM 
+        CodeRate        = [] %Used code rate *not implemented*
+        FrameCount      = [] %How many frames will be uses *not implemented*
+        BitStream       = [] %User data || simulation data
     end
-    
     methods(Static)
         %Method to encode a parsed logical bitstream into graycoded symbols
         %depending on parsed modulation order

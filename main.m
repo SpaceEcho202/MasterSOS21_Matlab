@@ -5,11 +5,13 @@ clear all
 
 SequenceLength = 1024;
 SeedPRBS = 1;
-ModulationOrder = 64;
 
-BitStream = nrPRBS(SeedPRBS, SequenceLength)';
+Simulation = Numerlogy;
 
-ComplexSymbols = Numerlogy.symbol_mapper(BitStream, ModulationOrder);
+Simulation.ModulationOrder = 64;
+Simulation.BitStream = nrPRBS(SeedPRBS, SequenceLength)';
+
+ComplexSymbols = Simulation.symbol_mapper;
 
 fprintf("gray-coded-complex-symbolstream: \n");
 fprintf('%f%+fj\n', real(ComplexSymbols),imag(ComplexSymbols));
