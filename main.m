@@ -8,4 +8,9 @@ SeedPRBS = 1;
 
 Simulation = Numerlogy;
 
-Simulation.ModulationOrder = 256;
+Simulation.ModulationOrder      = 256;
+Simulation.ResourceElementCount = 12;
+Simulation.SeedPRBS             = 0;
+
+complexSymbols = Simulation.symbol_mapper();
+ifft = Simulation.ifft_signal();
