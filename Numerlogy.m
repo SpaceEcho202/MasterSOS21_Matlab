@@ -38,7 +38,7 @@ classdef Numerlogy
                     FFTSize = 256;
                 case 5e6
                     ResourceBlockCount = 25;
-                    FFTSize = 521;
+                    FFTSize = 512;
                 case 10e6
                     ResourceBlockCount = 50;
                     FFTSize = 1024;
@@ -80,7 +80,7 @@ classdef Numerlogy
             VirtualSubcarrierCount = Size-ResourceBlocks*obj.ResourceElementCount;
             IFFTFrame = [zeros(1, VirtualSubcarrierCount/2), symbol_mapper(obj),...
                 zeros(1, VirtualSubcarrierCount/2)];
-            IFFT = ifft(IFFTFrame);
+            IFFT = ifftshift(ifft(IFFTFrame));
         end
     end
 end
