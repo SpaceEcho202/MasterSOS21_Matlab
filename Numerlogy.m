@@ -27,6 +27,7 @@ classdef Numerlogy
             obj.SubcarrierSpacing       = 15e3;
             obj.CyclicPrefix            = 1/4;
             obj.SymbolsPerFrame         = 7;
+            
         end
     end
     methods
@@ -88,18 +89,15 @@ classdef Numerlogy
     %         end
     %     end
     methods
-        % Methods which transforms a zero padded vector in a time time
+        % Methods which transforms a zero padded vector in a time
         % vector
         function TimeSignal = ofdm_time_signal(obj)
             [ResourceBlocks, Size] = resource_blocks(obj);
             VirtualSubcarrierCount = Size-ResourceBlocks*obj.ResourceElementCount;
             ComplexSymbolFrame = symbol_mapper(obj);
-            IFFTFrame = zeros(ResourceBlocks, Size);
-            for Index = 1:ResourceBlocks
-                IFFTFrame(Index,:) = [zeros(1, VirtualSubcarrierCount/2), ComplexSymbolFrame(Index,:),...
-                    zeros(1, VirtualSubcarrierCount/2)];
-                TimeSignal = ifftshift(ifft(IFFTFrame));
-            end
+            IFFTFrame = [zeros(obj.SymbolsPerFrame, VirtualSubcarrierCount/2),...
+                ComplexSymbolFrame, zeros(obj.SymbolsPerFrame, VirtualSubcarrierCount/2)];
+            TimeSignal = ifft(IFFTFrame, [], 2);
         end
     end
 end
