@@ -12,7 +12,7 @@ Simulation.SeedPRBS             = 1;
 Simulation.Bandwidth            = 1.4e6;
 
 complexSymbols = Simulation.symbol_mapper();
-ifft = Simulation.ifft_signal();
+ifft = Simulation.ofdm_time_signal();
 fft = (fft(ifft));
 f = linspace(-length(ifft)/2, length(ifft)/2, length(ifft));
 figure(1)
