@@ -6,7 +6,7 @@ clear all
 
 Simulation = Numerlogy;
 
-Simulation.ModulationOrder      = 256;
+Simulation.ModulationOrder      = 4;
 Simulation.ResourceElementCount = 12;
 Simulation.SeedPRBS             = 1;
 Simulation.Bandwidth            = 1.4e6;
