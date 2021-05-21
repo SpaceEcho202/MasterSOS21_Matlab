@@ -13,6 +13,7 @@ classdef Numerlogy
         ComplexSymbols;
         SubcarrierSpacing;
         CyclicPrefix;
+        SymbolsPerFrame;
     end
     methods
         % Is used as constructor to predifine class variables
@@ -25,6 +26,7 @@ classdef Numerlogy
             obj.SeedPRBS                = 401;
             obj.SubcarrierSpacing       = 15e3;
             obj.CyclicPrefix            = 1/4;
+            obj.SymbolsPerFrame         = 7;
         end
     end
     methods
@@ -43,8 +45,8 @@ classdef Numerlogy
                     ResourceBlockCount = 50;
                     FFTSize = 1024;
                 otherwise
-                    ResourceBlockCount = empty; 
-                    FFTSize = empty; 
+                    ResourceBlockCount = empty;
+                    FFTSize = empty;
             end
         end
     end
@@ -53,14 +55,15 @@ classdef Numerlogy
         % recource elements are used
         function BitStream = bit_stream(obj)
             BitPerSymbol = log2(obj.ModulationOrder);
-            BitStreamLength = BitPerSymbol*obj.ResourceElementCount*resource_blocks(obj);
+            BitStreamLength = BitPerSymbol*obj.ResourceElementCount...
+                *resource_blocks(obj)*obj.SymbolsPerFrame;
             BitStream = nrPRBS(obj.SeedPRBS, BitStreamLength)';
         end
     end
     methods
         % Method to encode a parsed logical bitstream into graycoded symbols
         % depending on parsed modulation order
-        function ComplexSymbols = symbol_mapper(obj)
+        function ComplexSymbolFrame = symbol_mapper(obj)
             BitPerSymbol = log2(obj.ModulationOrder);
             SymbolsInBitStream = length(bit_stream(obj))/BitPerSymbol;
             BitStream = bit_stream(obj);
@@ -69,18 +72,34 @@ classdef Numerlogy
                 DecStream(Index,:) = bin2dec(num2str(BitStream(1:BitPerSymbol)));
                 BitStream(1:BitPerSymbol) = [];
             end
-            ComplexSymbols = qammod(DecStream', obj.ModulationOrder ,'gray');
+            OfdmSymbolsPerFrame = obj.ResourceElementCount*resource_blocks(obj);
+            obj.ComplexSymbols = qammod(DecStream', obj.ModulationOrder ,'gray');
+            ComplexSymbolFrame = zeros(obj.SymbolsPerFrame, OfdmSymbolsPerFrame);
+            for Index = 1:obj.SymbolsPerFrame
+                ComplexSymbolFrame(Index,:) = obj.ComplexSymbols(1:OfdmSymbolsPerFrame);
+                obj.ComplexSymbols(1:OfdmSymbolsPerFrame) = [];
+            end
         end
-    end  
+    end
+    %     methods
+    %         function CyclicPrefix = cyclic_extension(obj)
+    %             for Index = 0:
+    %                 OfdmSymbol = ofdm_symbol(obj);
+    %         end
+    %     end
     methods
         % Methods which transforms a zero padded vector in a time time
         % vector
-        function IFFT = ifft_signal(obj)
-            [ResourceBlocks, Size] = resource_blocks(obj); 
+        function TimeSignal = ofdm_time_signal(obj)
+            [ResourceBlocks, Size] = resource_blocks(obj);
             VirtualSubcarrierCount = Size-ResourceBlocks*obj.ResourceElementCount;
-            IFFTFrame = [zeros(1, VirtualSubcarrierCount/2), symbol_mapper(obj),...
-                zeros(1, VirtualSubcarrierCount/2)];
-            IFFT = ifftshift(ifft(IFFTFrame));
+            ComplexSymbolFrame = symbol_mapper(obj);
+            IFFTFrame = zeros(ResourceBlocks, Size);
+            for Index = 1:ResourceBlocks
+                IFFTFrame(Index,:) = [zeros(1, VirtualSubcarrierCount/2), ComplexSymbolFrame(Index,:),...
+                    zeros(1, VirtualSubcarrierCount/2)];
+                TimeSignal = ifftshift(ifft(IFFTFrame));
+            end
         end
     end
 end
