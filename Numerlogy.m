@@ -8,12 +8,13 @@ classdef Numerlogy
         ModulationOrder;        %Used for QAM
         Coderate;               %Used code rate *not implemented*
         FrameCount;             %How many frames will be uses *not implemented*
-        ResourceElementCount;
-        SeedPRBS;
+        ResourceElementCount;   %Smallest assignable unit in grid
+        SeedPRBS;               %Seed to reproduce bit sequence
         ComplexSymbols;
         SubcarrierSpacing;
-        CyclicPrefix;
+        CyclicPrefixLength;
         SymbolsPerFrame;
+        SlotCount;
     end
     methods
         % Is used as constructor to predifine class variables
@@ -25,8 +26,9 @@ classdef Numerlogy
             obj.ResourceElementCount    = 1;
             obj.SeedPRBS                = 401;
             obj.SubcarrierSpacing       = 15e3;
-            obj.CyclicPrefix            = 1/4;
+            obj.CyclicPrefixLength      = 1/4;
             obj.SymbolsPerFrame         = 7;
+            obj.SlotCount               = 2;
             
         end
     end
@@ -73,21 +75,15 @@ classdef Numerlogy
                 DecStream(Index,:) = bin2dec(num2str(BitStream(1:BitPerSymbol)));
                 BitStream(1:BitPerSymbol) = [];
             end
-            OfdmSymbolsPerFrame = obj.ResourceElementCount*resource_blocks(obj);
+            OfdmSymbolsPerResourceBlock = obj.ResourceElementCount*resource_blocks(obj);
             obj.ComplexSymbols = qammod(DecStream', obj.ModulationOrder ,'gray');
-            ComplexSymbolFrame = zeros(obj.SymbolsPerFrame, OfdmSymbolsPerFrame);
+            ComplexSymbolFrame = zeros(obj.SymbolsPerFrame, OfdmSymbolsPerResourceBlock);
             for Index = 1:obj.SymbolsPerFrame
-                ComplexSymbolFrame(Index,:) = obj.ComplexSymbols(1:OfdmSymbolsPerFrame);
-                obj.ComplexSymbols(1:OfdmSymbolsPerFrame) = [];
+                ComplexSymbolFrame(Index,:) = obj.ComplexSymbols(1:OfdmSymbolsPerResourceBlock);
+                obj.ComplexSymbols(1:OfdmSymbolsPerResourceBlock) = [];
             end
         end
     end
-    %     methods
-    %         function CyclicPrefix = cyclic_extension(obj)
-    %             for Index = 0:
-    %                 OfdmSymbol = ofdm_symbol(obj);
-    %         end
-    %     end
     methods
         % Methods which transforms a zero padded vector in a time
         % vector
@@ -98,6 +94,14 @@ classdef Numerlogy
             IFFTFrame = [zeros(obj.SymbolsPerFrame, VirtualSubcarrierCount/2),...
                 ComplexSymbolFrame, zeros(obj.SymbolsPerFrame, VirtualSubcarrierCount/2)];
             TimeSignal = ifft(IFFTFrame, [], 2);
+        end
+    end
+    methods 
+        % Method which adds a cyclic extension to each ofdmSymbol
+        function TimeSignalCP = cycle_prefixer(obj)
+            TimeSignal = ofdm_time_signal(obj);
+            SamplesPerCyclePrefix  = length(TimeSignal)*obj.CyclicPrefixLength;
+            TimeSignalCP = [TimeSignal(:,(end-SamplesPerCyclePrefix+1):end), TimeSignal];
         end
     end
 end

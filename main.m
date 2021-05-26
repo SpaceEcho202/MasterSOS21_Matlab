@@ -13,14 +13,12 @@ Simulation.Bandwidth            = 1.4e6;
 
 FreqAxis = linspace(-(15e3*64),(15e3*64),128);
 
-TimeAxis = linspace(0,(1/15e3)*6,7);
+TimeAxis = linspace(0,(1/15e3)*7,8);
 
 OfdmTimeSignal = Simulation.ofdm_time_signal();
+CyclicPrefix = Simulation.cycle_prefixer();
 OfdmSpectrum = fft(OfdmTimeSignal,[],2)';
-
-OfdmTimeSignal = reshape(OfdmTimeSignal,1,[]);
-
-spectrogram(OfdmTimeSignal)
+OfdmSpectrum = horzcat(OfdmSpectrum, OfdmSpectrum(:,7));
 
 [Time, Freq] = meshgrid(TimeAxis, FreqAxis);
 
