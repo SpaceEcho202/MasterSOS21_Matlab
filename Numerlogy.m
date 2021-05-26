@@ -13,22 +13,26 @@ classdef Numerlogy
         ComplexSymbols;
         SubcarrierSpacing;
         CyclicPrefixLength;
-        SymbolsPerFrame;
+        SymbolsPerResourceElement;   
         SlotCount;
+        FirstPolynomal;
+        SecondPolynomal;
     end
     methods
         % Is used as constructor to predifine class variables
-        function obj                    = Numerlogy()
-            obj.Bandwidth               = 1.4e6;
-            obj.ModulationOrder         = 4;
-            obj.Coderate                = [];
-            obj.FrameCount              = 1;
-            obj.ResourceElementCount    = 1;
-            obj.SeedPRBS                = 401;
-            obj.SubcarrierSpacing       = 15e3;
-            obj.CyclicPrefixLength      = 1/4;
-            obj.SymbolsPerFrame         = 7;
-            obj.SlotCount               = 2;
+        function obj                                = Numerlogy()
+            obj.Bandwidth                           = 1.4e6;
+            obj.ModulationOrder                     = 4;
+            obj.Coderate                            = [];
+            obj.FrameCount                          = 1;
+            obj.ResourceElementCount                = 1;
+            obj.SeedPRBS                            = 401;
+            obj.SubcarrierSpacing                   = 15e3;
+            obj.CyclicPrefixLength                  = 1/4;
+            obj.SymbolsPerResourceElement           = 7;
+            obj.SlotCount                           = 2;
+            obj.FirstPolynomal                      = [];
+            obj.SecondPolynomal                     = [];
             
         end
     end
@@ -59,7 +63,7 @@ classdef Numerlogy
         function BitStream = bit_stream(obj)
             BitPerSymbol = log2(obj.ModulationOrder);
             BitStreamLength = BitPerSymbol*obj.ResourceElementCount...
-                *resource_blocks(obj)*obj.SymbolsPerFrame;
+                *resource_blocks(obj)*obj.SymbolsPerResourceElement;
             BitStream = nrPRBS(obj.SeedPRBS, BitStreamLength)';
         end
     end
@@ -77,8 +81,8 @@ classdef Numerlogy
             end
             OfdmSymbolsPerResourceBlock = obj.ResourceElementCount*resource_blocks(obj);
             obj.ComplexSymbols = qammod(DecStream', obj.ModulationOrder ,'gray');
-            ComplexSymbolFrame = zeros(obj.SymbolsPerFrame, OfdmSymbolsPerResourceBlock);
-            for Index = 1:obj.SymbolsPerFrame
+            ComplexSymbolFrame = zeros(obj.SymbolsPerResourceElement, OfdmSymbolsPerResourceBlock);
+            for Index = 1:obj.SymbolsPerResourceElement
                 ComplexSymbolFrame(Index,:) = obj.ComplexSymbols(1:OfdmSymbolsPerResourceBlock);
                 obj.ComplexSymbols(1:OfdmSymbolsPerResourceBlock) = [];
             end
@@ -91,8 +95,8 @@ classdef Numerlogy
             [ResourceBlocks, Size] = resource_blocks(obj);
             VirtualSubcarrierCount = Size-ResourceBlocks*obj.ResourceElementCount;
             ComplexSymbolFrame = symbol_mapper(obj);
-            IFFTFrame = [zeros(obj.SymbolsPerFrame, VirtualSubcarrierCount/2),...
-                ComplexSymbolFrame, zeros(obj.SymbolsPerFrame, VirtualSubcarrierCount/2)];
+            IFFTFrame = [zeros(obj.SymbolsPerResourceElement, VirtualSubcarrierCount/2),...
+                ComplexSymbolFrame, zeros(obj.SymbolsPerResourceElement, VirtualSubcarrierCount/2)];
             TimeSignal = ifft(IFFTFrame, [], 2);
         end
     end
@@ -104,5 +108,29 @@ classdef Numerlogy
             TimeSignalCP = [TimeSignal(:,(end-SamplesPerCyclePrefix+1):end), TimeSignal];
         end
     end
+    methods
+        function GoldSequence = gold_sequencer(obj)
+            SequenceLength = log2(obj.ModulationOrder)*resource_blocks(obj);
+      
+            SmallestPolynomal = ceil(log2(SequenceLength/2)-1);
+            
+            x1_init = [0 0 1 0 0 0];
+            x2_init = [0 0 0 0 1 0];
+            
+            x1 = zeros(1,SequenceLength);
+            x2 = zeros(1,SequenceLength);
+            
+            x1(1:SequenceLength) = x1_init;
+            x2(1:SequenceLength) = x2_init;
+            
+            GoldSequence = zeros(1,SequenceLength);
+                     
+        end
+    end
+    %methods
+    %    function Preamble = preamble_creator(obj)
+    %        
+    %    end
+    %end
 end
 
