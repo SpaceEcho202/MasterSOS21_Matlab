@@ -4,12 +4,12 @@ classdef Numerlogy
     % frames
     
     properties
-        Bandwidth;              %Used transmission bandwidth
-        ModulationOrder;        %Used for QAM
-        Coderate;               %Used code rate *not implemented*
-        FrameCount;             %How many frames will be uses *not implemented*
-        ResourceElementCount;   %Smallest assignable unit in grid
-        SeedPRBS;               %Seed to reproduce bit sequence
+        Bandwidth;                      %Used transmission bandwidth
+        ModulationOrder;                %Used for QAM
+        Coderate;                       %Used code rate *not implemented*
+        FrameCount;                     %How many frames will be uses *not implemented*
+        SubcarrierPerRescourceBlock ;   %Smallest assignable unit in grid
+        SeedPRBS;                       %Seed to reproduce bit sequence
         ComplexSymbols;
         SubcarrierSpacing;
         CyclicPrefixLength;
@@ -25,7 +25,7 @@ classdef Numerlogy
             obj.ModulationOrder                     = 4;
             obj.Coderate                            = [];
             obj.FrameCount                          = 1;
-            obj.ResourceElementCount                = 1;
+            obj.SubcarrierPerRescourceBlock         = 12;
             obj.SeedPRBS                            = 401;
             obj.SubcarrierSpacing                   = 15e3;
             obj.CyclicPrefixLength                  = 1/4;
@@ -62,7 +62,7 @@ classdef Numerlogy
         % recource elements are used
         function BitStream = bit_stream(obj)
             BitPerSymbol = log2(obj.ModulationOrder);
-            BitStreamLength = BitPerSymbol*obj.ResourceElementCount...
+            BitStreamLength = BitPerSymbol*obj.SubcarrierPerRescourceBlock...
                 *resource_blocks(obj)*obj.SymbolsPerResourceElement;
             BitStream = nrPRBS(obj.SeedPRBS, BitStreamLength)';
         end
@@ -79,7 +79,7 @@ classdef Numerlogy
                 DecStream(Index,:) = bin2dec(num2str(BitStream(1:BitPerSymbol)));
                 BitStream(1:BitPerSymbol) = [];
             end
-            OfdmSymbolsPerResourceBlock = obj.ResourceElementCount*resource_blocks(obj);
+            OfdmSymbolsPerResourceBlock = obj.SubcarrierPerRescourceBlock*resource_blocks(obj);
             obj.ComplexSymbols = qammod(DecStream', obj.ModulationOrder ,'gray');
             ComplexSymbolFrame = zeros(obj.SymbolsPerResourceElement, OfdmSymbolsPerResourceBlock);
             for Index = 1:obj.SymbolsPerResourceElement
@@ -93,7 +93,7 @@ classdef Numerlogy
         % vector
         function TimeSignal = ofdm_time_signal(obj)
             [ResourceBlocks, Size] = resource_blocks(obj);
-            VirtualSubcarrierCount = Size-ResourceBlocks*obj.ResourceElementCount;
+            VirtualSubcarrierCount = Size-ResourceBlocks*obj.SubcarrierPerRescourceBlock;
             ComplexSymbolFrame = symbol_mapper(obj);
             IFFTFrame = [zeros(obj.SymbolsPerResourceElement, VirtualSubcarrierCount/2),...
                 ComplexSymbolFrame, zeros(obj.SymbolsPerResourceElement, VirtualSubcarrierCount/2)];
@@ -120,8 +120,12 @@ classdef Numerlogy
             x1 = zeros(1,SequenceLength);
             x2 = zeros(1,SequenceLength);
             
-            x1(1:SequenceLength) = x1_init;
-            x2(1:SequenceLength) = x2_init;
+            x1(1:SmallestPolynomal+1) = x1_init;
+            x2(1:SmallestPolynomal+1) = x2_init;
+            
+            for n = 1: SequenceLength
+                x1(n) = mod(x1(n+3) + x1(n),2);
+            end
             
             GoldSequence = zeros(1,SequenceLength);
                      

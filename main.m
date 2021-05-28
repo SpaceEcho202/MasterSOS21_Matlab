@@ -6,12 +6,12 @@ clear all
 
 Simulation = Numerlogy;
 
-Simulation.ModulationOrder      = 4;
-Simulation.ResourceElementCount = 12;
-Simulation.SeedPRBS             = 1;
-Simulation.Bandwidth            = 10e6;
+Simulation.ModulationOrder              = 4;
+Simulation.SubcarrierPerRescourceBlock  = 12;
+Simulation.SeedPRBS                     = 1;
+Simulation.Bandwidth                    = 10e6;
 
-%Test = Simulation.gold_sequencer();
+Test = Simulation.gold_sequencer();
 
 FreqAxis = linspace(-(15e3*64),(15e3*64),128);
 TimeAxis = linspace(0,(1/15e3)*7,8);
