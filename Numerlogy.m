@@ -109,27 +109,51 @@ classdef Numerlogy
         end
     end
     methods
-        function GoldSequence = gold_sequencer(obj)
-            SequenceLength = log2(obj.ModulationOrder)*resource_blocks(obj);
-      
-            SmallestPolynomal = ceil(log2(SequenceLength/2)-1);
+        % Method which creates a Pseudo-random sequence *ETSI TS 136 211 V12.3.0(2014-10)*
+        function [c_out, x1, x2, MPN, Pream ] = gold_sequencer(obj)
+               
+            NC  = 1.6e3;
+            GoldSequenceLength = 31;
+            MPN = log2(obj.ModulationOrder)*resource_blocks(obj);          
             
-            x1_init = [0 0 1 0 0 0];
-            x2_init = [0 0 0 0 1 0];
+            x1_init = [ones(1,1), zeros(1,GoldSequenceLength-1)];
+            x2_init = randi([0,1], 1,GoldSequenceLength);    
+            c_init  = zeros(1,GoldSequenceLength);
+            c_temp  = zeros(1,GoldSequenceLength);
             
-            x1 = zeros(1,SequenceLength);
-            x2 = zeros(1,SequenceLength);
-            
-            x1(1:SmallestPolynomal+1) = x1_init;
-            x2(1:SmallestPolynomal+1) = x2_init;
-            
-            for n = 1: SequenceLength
-                x1(n) = mod(x1(n+3) + x1(n),2);
+            for i = 1:GoldSequenceLength
+                c_temp(i)  = x2_init(i)*2^i;
             end
             
-            GoldSequence = zeros(1,SequenceLength);
-                     
-        end
+            c_temp = char(dec2bin(sum(c_temp)));
+            
+            for i = 1:GoldSequenceLength 
+                if c_temp(i) ==  '1'
+                    c_init(i) = 1;
+                else
+                    c_init(i) = 0;
+                end
+            end
+            
+           x1(1:length(x1_init)) = x1_init;
+           x2(1:length(x2_init)) = x2_init;
+           c = c_init;
+           
+            for n = 1: MPN + NC
+                x1(n+GoldSequenceLength) = mod(x1(n+3) + x1(n),2);
+                x2(n+GoldSequenceLength) = mod(x2(n+3) + x2(n+2)+x2(n+1) + x2(n),2);
+            end
+            
+            for n = 1: MPN
+                c(n) = mod(x1(n+NC) + x2(n+NC),2);
+            end   
+            c_out = c;
+            for Index = 1:MPN/ 2
+                DecStream(Index,:) = bin2dec(num2str(c(1:2)));
+                c(1:2) = [];
+            end
+            Pream = qammod(DecStream',4,'gray');
+        end     
     end
     %methods
     %    function Preamble = preamble_creator(obj)
