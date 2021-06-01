@@ -4,8 +4,7 @@ clc
 clear all
 
 Simulation =  NumerlogyRefactoring;
-Simulation.bit_stream();
-Simulation.symbol_mapper();
+IFFT = Simulation.cycle_prefixer();
 %{
 Simulation = Numerlogy;
 
