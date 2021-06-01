@@ -4,13 +4,13 @@ classdef Numerlogy
     % frames
     
     properties
-        Bandwidth;                      %Used transmission bandwidth
-        ModulationOrder;                %Used for QAM
-        Coderate;                       %Used code rate *not implemented*
-        FrameCount;                     %How many frames will be uses *not implemented*
-        SubcarrierPerRescourceBlock ;   %Smallest assignable unit in grid
-        SeedPRBS;                       %Seed to reproduce bit sequence
-        ComplexSymbols;
+        Bandwidth;                      % Used transmission bandwidth
+        ModulationOrder;                % Used for QAM
+        Coderate;                       % Used code rate *not implemented*
+        FrameCount;                     % How many frames will be uses *not implemented*
+        SubcarrierPerRescourceBlock ;   % Smallest assignable unit in grid
+        SeedPRBS;                       % Seed to reproduce bit sequence
+        ComplexSymbols;                 % 
         SubcarrierSpacing;
         CyclicPrefixLength;
         SymbolsPerResourceElement;   
@@ -137,18 +137,18 @@ classdef Numerlogy
             
            x1(1:length(x1_init)) = x1_init;
            x2(1:length(x2_init)) = x2_init;
+           
            c = c_init;
            
             for n = 1: MPN + NC
                 x1(n+GoldSequenceLength) = mod(x1(n+3) + x1(n),2);
                 x2(n+GoldSequenceLength) = mod(x2(n+3) + x2(n+2)+x2(n+1) + x2(n),2);
-            end
-            
+            end           
             for n = 1: MPN
                 c(n) = mod(x1(n+NC) + x2(n+NC),2);
             end   
             c_out = c;
-            for Index = 1:MPN/ 2
+            for Index = 1: MPN/ 2
                 DecStream(Index,:) = bin2dec(num2str(c(1:2)));
                 c(1:2) = [];
             end
