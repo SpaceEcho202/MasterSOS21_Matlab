@@ -14,8 +14,8 @@ classdef NumerlogyRefactoring
         CyclicPrefixLength;
         SymbolsPerResourceElement;
         SlotCount;
-        FirstPolynomal;
-        SecondPolynomal;
+        FirstPolynomal;                 % x1_init = Used to create gold sequence *not implemnented*
+        SecondPolynomal;                % x2_init = Used to create gold sequence *not implemnented*
     end
     
     methods
@@ -66,7 +66,7 @@ classdef NumerlogyRefactoring
     
     methods
         % Method to create a pseudo random bit sequence depending on how many
-        % recource elements are used
+        % recource elements are used or which length is passed as argument
         function BitStream = bit_stream(varargin)
             if (nargin ~= 1)
                 [BitStreamLength_, SeedPRBS_] = varargin{1,2:3};
@@ -122,50 +122,40 @@ classdef NumerlogyRefactoring
             end
         end
     end
+    
     methods
-        % Method which creates a Pseudo-random sequence *ETSI TS 136 211 V12.3.0(2014-10)*
-        function [c_out, x1, x2, MPN, Pream] = gold_sequencer(varargin)
+        % Method which creates a Pseudo-random sequence
+        % ETSI TS 136 211 V12.3.0(2014-10) with MPN = final sequence
+        % length
+        function [c_out, x1, x2] = gold_sequencer(varargin)
             if (nargin ~= 1)
-               MPN_ = varargin{1,2};
+                MPN_ = varargin{1,2};
             else
-               MPN_ = log2(varargin{1}.ModulationOrder)...
-                   *resource_blocks(varargin{:}); 
+                [~,Size_] = resource_blocks(varargin{:});
+                MPN_ = log2(varargin{1}.ModulationOrder)*Size_;
             end
             NC  = 1.6e3;
             GoldSequenceLength = 31;
             x1_init = [ones(1,1), zeros(1,GoldSequenceLength-1)];
-            x2_init = randi([0,1], 1,GoldSequenceLength);    
+            x2_init = randi([0,1], 1,GoldSequenceLength);
             c_init  = zeros(1,GoldSequenceLength);
-            c_temp  = zeros(1,GoldSequenceLength);
-            for i = 1:GoldSequenceLength
-                c_temp(i)  = x2_init(i)*2^i;
+            for i = 1:GoldSequenceLength-1
+                c_init(i)  = x2_init(i)*2^i;
             end
-            c_temp = char(dec2bin(sum(c_temp)));
-            for i = 1:GoldSequenceLength 
-                if c_temp(i) ==  '1'
-                    c_init(i) = 1;
-                else
-                    c_init(i) = 0;
-                end
-            end          
+            c_init = (de2bi(sum(c_init)));
             x1(1:length(x1_init)) = x1_init;
             x2(1:length(x2_init)) = x2_init;
-            c = c_init;
-            for n = 1: MPN + NC
+            c_out = [c_init zeros(1,MPN_-length(c_init))];
+            for n = 1: MPN_ + NC
                 x1(n+GoldSequenceLength) = mod(x1(n+3) + x1(n),2);
                 x2(n+GoldSequenceLength) = mod(x2(n+3) + x2(n+2)+x2(n+1) + x2(n),2);
-            end           
-            for n = 1: MPN
-                c(n) = mod(x1(n+NC) + x2(n+NC),2);
-            end   
-            c_out = c;
-            for Index = 1: MPN/ 2
-                DecStream(Index,:) = bin2dec(num2str(c(1:2)));
-                c(1:2) = [];
             end
-            Pream = qammod(DecStream',4,'gray');
-        end     
+            for n = 1: MPN_
+                c_out(n) = mod(x1(n+NC) + x2(n+NC),2);
+            end
+        end
     end
+    
     methods
         % Method whicht transforms a matrix with complex symbols in a
         % timesignal
@@ -175,7 +165,7 @@ classdef NumerlogyRefactoring
                     SymbolsPerResourceElement_] = varargin{1,2:4};
             else
                 [ResourceBlocks_, Size_] = resource_blocks(varargin{:});
-                SymbolsPerResourceElement_ = varargin{1}.SymbolsPerResourceElement; 
+                SymbolsPerResourceElement_ = varargin{1}.SymbolsPerResourceElement;
             end
             VirtualSubcarrierCount = Size_-ResourceBlocks_...
                 *varargin{1}.SubcarrierPerRescourceBlock;
@@ -185,12 +175,22 @@ classdef NumerlogyRefactoring
             IFFT = ifft(IFFTFrame, [], 2);
         end
     end
-    
-    methods 
+    methods
+        function Preamble = preamble_creator(varargin)
+            if (nargin ~= 1)
+                [GoldSequence_, ModulationOrder_] = varargin{1,2:3};
+            else
+                GoldSequence_ = gold_sequencer(varargin{:});
+                ModulationOrder_ = 4;
+            end
+            ComplexSymbols = symbol_mapper(GoldSequence_, ModulationOrder_); 
+        end
+    end
+    methods
         % Method which adds a cyclic extension to each ofdmSymbol
         function TimeSignalCP = cycle_prefixer(varargin)
             if (nargin ~= 1)
-                [TimeSignal_, CyclicPrefixLength_]= varargin{1,2:3}; 
+                [TimeSignal_, CyclicPrefixLength_]= varargin{1,2:3};
             else
                 TimeSignal_ = time_transform(varargin{:});
                 CyclicPrefixLength_ = varargin{1}.CyclicPrefixLength;

@@ -4,7 +4,9 @@ clc
 clear all
 
 Simulation =  NumerlogyRefactoring;
-IFFT = Simulation.cycle_prefixer();
+tic;
+[c_out, x1, x2] = Simulation.gold_sequencer();
+toc;
 %{
 Simulation = Numerlogy;
 
