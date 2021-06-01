@@ -85,8 +85,8 @@ classdef NumerlogyRefactoring
         % depending on parsed modulation order
         function ComplexSymbols = symbol_mapper(varargin)
             if (nargin ~= 1)
-                [ModulationOrder_, BitStream_] = varargin{1,2:3};
-            else
+                [ModulationOrder_, BitStream_] = varargin{1,1:2}; % Maybe you need to change all varargin{1,2:3} to varargin{1,1:*}
+            else                                                  % *end_number of passed arguments
                 ModulationOrder_ = varargin{1}.ModulationOrder;
                 BitStream_ = bit_stream(varargin{:});
             end
@@ -132,7 +132,7 @@ classdef NumerlogyRefactoring
                 MPN_ = varargin{1,2};
             else
                 [~,Size_] = resource_blocks(varargin{:});
-                MPN_ = log2(varargin{1}.ModulationOrder)*Size_;
+                MPN_ = log2(varargin{1}.ModulationOrder)*Size_/2;
             end
             NC  = 1.6e3;
             GoldSequenceLength = 31;
@@ -157,8 +157,8 @@ classdef NumerlogyRefactoring
     end
     
     methods
-        % Method whicht transforms a matrix with complex symbols in a
-        % timesignal
+        % Method whicht transforms a zero padded matrix with complex  
+        % symbols in a timesignal 
         function IFFT = time_transform(varargin)
             if (nargin ~= 1)
                 [ResourceBlocks_, Size_, ...
@@ -175,17 +175,24 @@ classdef NumerlogyRefactoring
             IFFT = ifft(IFFTFrame, [], 2);
         end
     end
+    
     methods
-        function Preamble = preamble_creator(varargin)
+        function PreambleVector = preamble_creator(varargin)
             if (nargin ~= 1)
-                [GoldSequence_, ModulationOrder_] = varargin{1,2:3};
+                [GoldSequence_, ModulationOrder_, Size_] = varargin{1,2:4};
             else
                 GoldSequence_ = gold_sequencer(varargin{:});
                 ModulationOrder_ = 4;
+                [~, Size_] = 
             end
-            ComplexSymbols = symbol_mapper(GoldSequence_, ModulationOrder_); 
+            ComplexSymbols = symbol_mapper(ModulationOrder_, GoldSequence_, varargin{:});
+            PreambleVector = zeros(1, Size_);
+            for Index = 1:length(PreambleVector)
+                
+            end
         end
     end
+    
     methods
         % Method which adds a cyclic extension to each ofdmSymbol
         function TimeSignalCP = cycle_prefixer(varargin)
