@@ -5,7 +5,7 @@ clear all
 
 Simulation =  NumerlogyRefactoring;
 Simulation.bit_stream();
-Simulation.symbol_mapper(1);
+Simulation.symbol_mapper();
 %{
 Simulation = Numerlogy;
 

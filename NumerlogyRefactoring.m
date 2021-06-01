@@ -10,10 +10,10 @@ classdef NumerlogyRefactoring
         FrameCount;                     % How many frames will be uses *not implemented*
         SubcarrierPerRescourceBlock ;   % Smallest assignable unit in grid
         SeedPRBS;                       % Seed to reproduce bit sequence
-        ComplexSymbols;                 % 
+        ComplexSymbols;                 %
         SubcarrierSpacing;
         CyclicPrefixLength;
-        SymbolsPerResourceElement;   
+        SymbolsPerResourceElement;
         SlotCount;
         FirstPolynomal;
         SecondPolynomal;
@@ -37,8 +37,13 @@ classdef NumerlogyRefactoring
         end
     end
     methods
-        function [ResourceBlockCount, FFTSize] = resource_blocks(obj)
-            switch obj.Bandwidth
+        function [ResourceBlockCount, FFTSize] = resource_blocks(varargin)
+            if (varargin ~= 1)
+                Bandwidth_ = varargin{1,2};
+            else
+                Bandwidth_ = varargin{1}.Bandwidth;
+            end
+            switch Bandwidth_
                 case 1.4e6
                     ResourceBlockCount = 6;
                     FFTSize = 128;
@@ -65,37 +70,52 @@ classdef NumerlogyRefactoring
                 [BitStreamLength_, SeedPRBS_] = varargin{1,2:3};
             else
                 SeedPRBS_ = varargin{1}.SeedPRBS;
+                Test = resource_blocks();
                 BitStreamLength_ = log2(varargin{1}.ModulationOrder)...
-                *varargin{1}.SubcarrierPerRescourceBlock...
-                *resource_blocks(obj)*varargin{1}.SymbolsPerResourceElement;
+                    *varargin{1}.SubcarrierPerRescourceBlock...
+                    *resource_blocks()*varargin{1}.SymbolsPerResourceElement;
             end
             BitStream = nrPRBS(SeedPRBS_, BitStreamLength_)';
         end
     end
+    
     methods
         % Method to encode a parsed logical bitstream into graycoded symbols
         % depending on parsed modulation order
-        function ComplexSymbolFrame = symbol_mapper(varargin)
+        function ComplexSymbols = symbol_mapper(varargin)
             if (nargin ~= 1)
-               [ModulationOrder_, BitStream_] = varargin{1,2:3};
+                [ModulationOrder_, BitStream_] = varargin{1,2:3};
             else
                 ModulationOrder_ = varargin{1}.ModulationOrder;
-                BitStream_ = bit_stream()/log2(ModulationOrder_);
+                BitStream_ = bit_stream();
             end
-            BitPerSymbol = log2(obj.ModulationOrder);
-            SymbolsInBitStream = length(bit_stream(obj))/BitPerSymbol;
-            BitStream = bit_stream(obj);
+            BitPerSymbol = log2(ModulationOrder_);
+            SymbolsInBitStream = length(BitStream_/BitPerSymbol);
             DecStream = zeros(SymbolsInBitStream , 1);
             for Index = 1:SymbolsInBitStream
                 DecStream(Index,:) = bin2dec(num2str(BitStream(1:BitPerSymbol)));
                 BitStream(1:BitPerSymbol) = [];
             end
-            OfdmSymbolsPerResourceBlock = obj.SubcarrierPerRescourceBlock*resource_blocks(obj);
-            obj.ComplexSymbols = qammod(DecStream', obj.ModulationOrder ,'gray');
-            ComplexSymbolFrame = zeros(obj.SymbolsPerResourceElement, OfdmSymbolsPerResourceBlock);
-            for Index = 1:obj.SymbolsPerResourceElement
-                ComplexSymbolFrame(Index,:) = obj.ComplexSymbols(1:OfdmSymbolsPerResourceBlock);
-                obj.ComplexSymbols(1:OfdmSymbolsPerResourceBlock) = [];
+            ComplexSymbols = qammod(DecStream', ModulationOrder_ ,'gray');
+        end
+    end
+    
+    methods
+        function SymbolAllocation = symbol_allocater(varargin)
+            if (nargin ~= 1)
+                [SubcarrierPerRescourceBlock_, ResourceBlocks_, ...
+                    SymbolsPerResourceElement_, ComplexSymbols_] = varargin{1,2:5};
+            else
+                SubcarrierPerRescourceBlock_ = varargin{1}.SubcarrierPerRescourceBlock;
+                ResourceBlocks_ = resource_blocks();
+                ComplexSymbols_ = symbol_mapper();
+            end
+            OfdmSymbolsPerResourceBlock = SubcarrierPerRescourceBlock_*ResourceBlocks_;
+            SymbolAllocation = zeros(varargin{1}.SymbolsPerResourceElement,...
+                OfdmSymbolsPerResourceBlock);
+            for Index = 1:SymbolsPerResourceElement_
+                SymbolAllocation(Index,:) = ComplexSymbols_(1:OfdmSymbolsPerResourceBlock);
+                ComplexSymbols_(1:OfdmSymbolsPerResourceBlock) = [];
             end
         end
     end
