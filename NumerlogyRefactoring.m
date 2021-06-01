@@ -105,15 +105,15 @@ classdef NumerlogyRefactoring
         % Method to allocate complex symbols in a time frequency grid
         function SymbolAllocation = symbol_allocater(varargin)
             if (nargin ~= 1)
-                [SubcarrierPerRescourceBlock_, ResourceBlocks_, ...
+                [SubcarrierPerRescourceBlock_, ResourceBlockCount_, ...
                     SymbolsPerResourceElement_, ComplexSymbols_] = varargin{1,2:5};
             else
                 SubcarrierPerRescourceBlock_ = varargin{1}.SubcarrierPerRescourceBlock;
-                ResourceBlocks_ = resource_blocks(varargin{:});
+                ResourceBlockCount_ = resource_blocks(varargin{:});
                 ComplexSymbols_ = symbol_mapper(varargin{:});
                 SymbolsPerResourceElement_ = varargin{1}.SymbolsPerResourceElement;
             end
-            OfdmSymbolsPerResourceBlock = SubcarrierPerRescourceBlock_*ResourceBlocks_;
+            OfdmSymbolsPerResourceBlock = SubcarrierPerRescourceBlock_*ResourceBlockCount_;
             SymbolAllocation = zeros(SymbolsPerResourceElement_,...
                 OfdmSymbolsPerResourceBlock);
             for Index = 1:SymbolsPerResourceElement_
@@ -131,8 +131,8 @@ classdef NumerlogyRefactoring
             if (nargin ~= 1)
                 MPN_ = varargin{1,2};
             else
-                [~,Size_] = resource_blocks(varargin{:});
-                MPN_ = log2(varargin{1}.ModulationOrder)*Size_/2;
+                [ResourceBlockCount,~] = resource_blocks(varargin{:});
+                MPN_ = log2(varargin{1}.ModulationOrder)*ResourceBlockCount;
             end
             NC  = 1.6e3;
             GoldSequenceLength = 31;
@@ -161,13 +161,13 @@ classdef NumerlogyRefactoring
         % symbols in a timesignal 
         function IFFT = time_transform(varargin)
             if (nargin ~= 1)
-                [ResourceBlocks_, Size_, ...
+                [ResourceBlockCount_, Size_, ...
                     SymbolsPerResourceElement_] = varargin{1,2:4};
             else
-                [ResourceBlocks_, Size_] = resource_blocks(varargin{:});
+                [ResourceBlockCount_, Size_] = resource_blocks(varargin{:});
                 SymbolsPerResourceElement_ = varargin{1}.SymbolsPerResourceElement;
             end
-            VirtualSubcarrierCount = Size_-ResourceBlocks_...
+            VirtualSubcarrierCount = Size_-ResourceBlockCount_...
                 *varargin{1}.SubcarrierPerRescourceBlock;
             SymbolAllocation = symbol_allocater(varargin{:});
             IFFTFrame = [zeros(SymbolsPerResourceElement_, VirtualSubcarrierCount/2),...
@@ -179,20 +179,18 @@ classdef NumerlogyRefactoring
     methods
         function PreambleVector = preamble_creator(varargin)
             if (nargin ~= 1)
-                [GoldSequence_, ModulationOrder_, Size_] = varargin{1,2:4};
+                [GoldSequence_, ModulationOrder_, ResourceBlockCount_] = varargin{1,2:4};
             else
                 GoldSequence_ = gold_sequencer(varargin{:});
                 ModulationOrder_ = 4;
-                [~, Size_] = 
+                [ResourceBlockCount_, ~] = resource_blocks(varargin{:});
             end
             ComplexSymbols = symbol_mapper(ModulationOrder_, GoldSequence_, varargin{:});
-            PreambleVector = zeros(1, Size_);
-            for Index = 1:length(PreambleVector)
-                
-            end
+            PreambleVector = zeros(1, ResourceBlockCount_);
+            PreambleVector(2:2:end) = ComplexSymbols;
         end
     end
-    
+  
     methods
         % Method which adds a cyclic extension to each ofdmSymbol
         function TimeSignalCP = cycle_prefixer(varargin)
