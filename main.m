@@ -1,13 +1,9 @@
 %% This is our main.m whicht will be used to execute the simulation!
 
-clc
-clear all
-
-Simulation =  NumerlogyRefactoring;
-tic;
-ComplexSymbols = Simulation.first_preamble_creator();
-toc;
 %{
+=======
+
+>>>>>>> 968f164dfcd421d4c20a6744280abac7bdac3979
 Simulation = Numerlogy;
 
 Simulation.ModulationOrder              = 4;
@@ -24,10 +20,10 @@ stem(x2)
 subplot(3,2,1)
 stem(GoldSequence)
 subplot(3,2,2)
-stem(abs(1/(2*length(GoldSequence))*xcorr(GoldSequence)));
-subplot(3,3,3)
-stem(abs(1/(2*length(Pream))*xcorr(Pream)));
-%}
+% stem(abs(1/(2*length(GoldSequence))*xcorr(GoldSequence)));
+% subplot(3,3,3)
+% stem(abs(1/(2*length(Pream))*xcorr(Pream)));
+
 
 %{
 FreqAxis = linspace(-(15e3*64),(15e3*64),128);
