@@ -5,17 +5,19 @@ classdef NumerlogyRefactoring
     
     properties
         Bandwidth;                      % Used transmission bandwidth
-        ModulationOrder;                % Used for QAM
+        ModulationOrder;                % Used for quadrature modulation 
         Coderate;                       % Used code rate *not implemented*
         FrameCount;                     % How many frames will be uses *not implemented*
         SubcarrierPerRescourceBlock ;   % Smallest assignable unit in grid
         SeedPRBS;                       % Seed to reproduce bit sequence
-        SubcarrierSpacing;
-        CyclicPrefixLength;
-        SymbolsPerResourceElement;
-        SlotCount;
+        SubcarrierSpacing;              % Used to set \delta f between adjacent carriers
+        CyclicPrefixLength;             % Used to set the cyclixc extension of one OFDM symbol
+        SymbolsPerResourceElement;      % Used to determine how many symbols fit in one element
+        SlotCount;                      % Used to set how many slots will fin in one element
         FirstPolynomal;                 % x1_init = Used to create gold sequence *not implemnented*
         SecondPolynomal;                % x2_init = Used to create gold sequence *not implemnented*
+        PreambleBoostFactor             % Used to boost the synchronizer preamble *not implemented*
+
     end
     
     methods
@@ -33,6 +35,7 @@ classdef NumerlogyRefactoring
             obj.SlotCount                           = 2;
             obj.FirstPolynomal                      = [];
             obj.SecondPolynomal                     = [];
+            obj.PreambleBoostFactor                 = [];
             
         end
     end
@@ -124,15 +127,27 @@ classdef NumerlogyRefactoring
     end
     
     methods
-        % Method which creates a Pseudo-random sequence
+        % Method which creates a pseudo-random sequence
         % ETSI TS 136 211 V12.3.0(2014-10) with MPN = final sequence
         % length
         function [c_out, x1, x2] = gold_sequencer(varargin)
             if (nargin ~= 1)
-                MPN_ = varargin{1,2};
+                if (varargin{1,1} == 'first_preamble') % *Use Enums in stead of chars*
+                    MPN_ = log2(varargin{2})...
+                        *varargin{3}.SubcarrierPerRescourceBlock...
+                        *resource_blocks(varargin{3})/2;                
+                elseif (varargin{1,1} == 'second_preamble')
+                    MPN_ = log2(varargin{2})...
+                        *varargin{3}.SubcarrierPerRescourceBlock...
+                        *resource_blocks(varargin{3});
+                else 
+                    MPN_ = varargin{1,2};
+                end
             else
-                [ResourceBlockCount,~] = resource_blocks(varargin{:});
-                MPN_ = log2(varargin{1}.ModulationOrder)*ResourceBlockCount;
+                [ResourceBlockCount, ~] = resource_blocks(varargin{:});
+                Size_ = ResourceBlockCount...
+                    *varargin{1}.SubcarrierPerRescourceBlock;
+                MPN_ = log2(varargin{1}.ModulationOrder)*Size_;
             end
             NC  = 1.6e3;
             GoldSequenceLength = 31;
@@ -177,20 +192,26 @@ classdef NumerlogyRefactoring
     end
     
     methods
-        function PreambleVector = preamble_creator(varargin)
+        % Method which creates the first synchronization preamble and sets
+        % every second element of the vector to zero
+        function FirstPreambleVector = first_preamble_creator(varargin)
             if (nargin ~= 1)
-                [GoldSequence_, ModulationOrder_, ResourceBlockCount_] = varargin{1,2:4};
+                [GoldSequence_, ModulationOrder_, Size_] = varargin{1,2:4};
             else
-                GoldSequence_ = gold_sequencer(varargin{:});
                 ModulationOrder_ = 4;
-                [ResourceBlockCount_, ~] = resource_blocks(varargin{:});
+                GoldSequence_ = gold_sequencer('first_preamble',...
+                    ModulationOrder_ ,varargin{:});             
+                Size_ = length(GoldSequence_);
             end
             ComplexSymbols = symbol_mapper(ModulationOrder_, GoldSequence_, varargin{:});
-            PreambleVector = zeros(1, ResourceBlockCount_);
-            PreambleVector(2:2:end) = ComplexSymbols;
+            FirstPreambleVector = zeros(1, Size_);
+            for Index  = 2:2:length(FirstPreambleVector)
+                FirstPreambleVector(Index) = ComplexSymbols(1);
+                ComplexSymbols(1) = [];
+            end
         end
     end
-  
+    
     methods
         % Method which adds a cyclic extension to each ofdmSymbol
         function TimeSignalCP = cycle_prefixer(varargin)

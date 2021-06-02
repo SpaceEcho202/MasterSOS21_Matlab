@@ -5,8 +5,7 @@ clear all
 
 Simulation =  NumerlogyRefactoring;
 tic;
-[c_out, x1, x2] = Simulation.gold_sequencer();
-ComplexSymbols = Simulation.preamble_creator();
+ComplexSymbols = Simulation.first_preamble_creator();
 toc;
 %{
 Simulation = Numerlogy;
