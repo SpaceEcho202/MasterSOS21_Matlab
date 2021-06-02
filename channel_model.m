@@ -1,7 +1,8 @@
 classdef channel_model < matlab.mixin.SetGet
-   properties (Constant,GetAccess=private)
-       speed_of_light = 3e8;
-   end
+    properties (Constant,GetAccess=private)
+        speed_of_light = 3e8;
+    end
+    
     
    properties 
        velocity;
@@ -176,6 +177,7 @@ classdef channel_model < matlab.mixin.SetGet
        end
        
        
+
     end
     
 end
