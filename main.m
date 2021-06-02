@@ -2,4 +2,6 @@
 clc
 clear all
 Simulation = NumerlogyRefactoring;
+tic;
 Simulation.preamble_allocater();
+toc;

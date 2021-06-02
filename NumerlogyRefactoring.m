@@ -132,12 +132,12 @@ classdef NumerlogyRefactoring
         % length
         function [c_out, x1, x2] = gold_sequencer(varargin)
             if (nargin ~= 1)
-                if (varargin{1,1} == 'first_preamble') % *Use Enums in stead of chars*
-                    MPN_ = log2(varargin{2})...
+                if strcmp(varargin{2},'first_preamble') % *Use Enums in stead of chars*
+                    MPN_ = log2(varargin{1})...
                         *varargin{3}.SubcarrierPerRescourceBlock...
                         *resource_blocks(varargin{3})/2;
-                elseif (varargin{1,1} == 'second_preamble')
-                    MPN_ = log2(varargin{2})...
+                elseif strcmp(varargin{2},'second_preamble')
+                    MPN_ = log2(varargin{1})...
                         *varargin{3}.SubcarrierPerRescourceBlock...
                         *resource_blocks(varargin{3});
                 else
@@ -197,37 +197,36 @@ classdef NumerlogyRefactoring
         function PreambleVector = preamble_creator(varargin)
             if (nargin ~= 2)
                 [GoldSequence_, ModulationOrder_, Size_] = varargin{1,2:4};
-            elseif (varargin{1} == 'second_preamble')
-                ModulationOrder_ = 4;
-                GoldSequence_ = gold_sequencer('second_preamble',...
-                    ModulationOrder_ ,varargin{:});
-                Size_ = length(GoldSequence_);
             else
                 ModulationOrder_ = 4;
-                GoldSequence_ = gold_sequencer('first_preamble',...
-                    ModulationOrder_ ,varargin{:});
-                Size_ = length(GoldSequence_);
+                GoldSequence_ = gold_sequencer(ModulationOrder_ ,varargin{:});
+                Size_ = resource_blocks(varargin{2})*varargin{2}.SubcarrierPerRescourceBlock;
             end
-            ComplexSymbols = symbol_mapper(ModulationOrder_, GoldSequence_, varargin{:});
-            PreambleVector = zeros(1, Size_);
-            if (varargin{1} == 'second_preamble')
-                PreambleVector = ComplexSymbols;
-            else
+            ComplexSymbols = symbol_mapper(ModulationOrder_,...
+                GoldSequence_, varargin{:});
+            if strcmp(varargin{1},'first_preamble') % *Use Enums to mark entry of cell*
+                PreambleVector = zeros(1, Size_);
                 for Index  = 2:2:length(PreambleVector)
                     PreambleVector(Index) = ComplexSymbols(1);
                     ComplexSymbols(1) = [];
                 end
+            else
+                PreambleVector = ComplexSymbols;
             end
         end
     end
+    
     methods
         function PreambleAllocation = preamble_allocater(varargin)
             if (nargin ~= 1)
+                [PreambleVectorOne, PreambleVectorTwo] = varargin{1,2,3};
             else
-                preamble_creator('second_preamble',varargin{:})
+                PreambleVectorOne = PreambleVector('first_preamble');
+                PreambleVectorTwo = PreambleVector('second_preamble');
             end
         end
     end
+    
     methods
         % Method which adds a cyclic extension to each ofdmSymbol
         function TimeSignalCP = cycle_prefixer(varargin)
