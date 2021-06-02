@@ -3,5 +3,5 @@ clc
 clear all
 Simulation = NumerlogyRefactoring;
 tic;
-Simulation.preamble_allocater();
+Simulation.frame_creator();
 toc;

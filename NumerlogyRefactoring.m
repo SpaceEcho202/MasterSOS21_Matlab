@@ -184,7 +184,11 @@ classdef NumerlogyRefactoring
             end
             VirtualSubcarrierCount = Size_-ResourceBlockCount_...
                 *varargin{1}.SubcarrierPerRescourceBlock;
-            SymbolAllocation = symbol_allocater(varargin{:});
+            if strcmp(varargin{1},'preamble')
+                SymbolAllocation = preamble_allocater(varargin{:});
+            else
+                SymbolAllocation = symbol_allocater(varargin{:});
+            end
             IFFTFrame = [zeros(SymbolsPerResourceElement_, VirtualSubcarrierCount/2),...
                 SymbolAllocation, zeros(SymbolsPerResourceElement_, VirtualSubcarrierCount/2)];
             IFFT = ifft(IFFTFrame, [], 2);
@@ -219,14 +223,25 @@ classdef NumerlogyRefactoring
     methods
         function PreambleAllocation = preamble_allocater(varargin)
             if (nargin ~= 1)
-                [PreambleVectorOne, PreambleVectorTwo] = varargin{1,2,3};
+                [PreambleVectorOne_, PreambleVectorTwo_] = varargin{1,2,3};
             else
-                PreambleVectorOne = PreambleVector('first_preamble');
-                PreambleVectorTwo = PreambleVector('second_preamble');
+                PreambleVectorOne_ = preamble_creator('first_preamble',varargin{:});
+                PreambleVectorTwo_ = preamble_creator('second_preamble',varargin{:});
             end
+            PreambleAllocation = [PreambleVectorOne_;PreambleVectorTwo_];
         end
     end
-    
+    methods
+        function TxFrame = frame_creator(varargin)
+           if (nargin ~= 1)
+               TxFrame = varargin{1,2};
+           else
+               TimePreamble = time_transform('pramble', varargin{:});
+               TimePayload = time_transform(varargin{:});
+           end
+           TxFrame = [TimePreamble, TimePayload];
+        end
+    end
     methods
         % Method which adds a cyclic extension to each ofdmSymbol
         function TimeSignalCP = cycle_prefixer(varargin)
