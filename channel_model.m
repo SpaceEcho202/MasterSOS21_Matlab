@@ -3,25 +3,25 @@ classdef channel_model < matlab.mixin.SetGet
         speed_of_light = 3e8;
     end
     
-    
-   properties 
+    properties 
        velocity;
        carrier_frequency;
-       oversampling_factor;
        bandwidth_signal;
        simulation_time;
        precision;
        sampling_rate_system;
        output_samples;
-   end 
+    end 
+    
+    properties (SetAcces = )
+        
+    end
    
    
     methods
-       function obj = channel_model(velocity,carrier_frequency, oversampling_factor,simulation_time,precision,sampling_rate_system)
-           
+       function obj = channel_model(velocity,carrier_frequency,simulation_time,precision,sampling_rate_system)        
                set(obj,'velocity',velocity);
                set(obj,'carrier_frequency',carrier_frequency);
-               set(obj,'oversampling_factor',oversampling_factor);
                set(obj,'simulation_time',simulation_time);
                set(obj,'precision',precision);
                set(obj,'sampling_rate_system',sampling_rate_system);
@@ -119,17 +119,6 @@ classdef channel_model < matlab.mixin.SetGet
            number_of_needed_samples = ceil( sampling_rate_gen  * time_intervall )+2;
        end
        
-%        function [normalized_doppler_frequency, max_doppler_position, number_of_samples] = calculation_of_doppler_samples(obj,max_doppler_frequency,precision,time_intervall,oversampling_factor)                      
-%            frequency_resolution = 2*sqrt(precision) / (pi * time_intervall); 
-%            max_doppler_position = floor(max_doppler_frequency / frequency_resolution )*oversampling_factor;
-%            number_of_samples = 2 * max_doppler_position+oversampling_factor;
-%            
-%            %frequency_resolution_oversampled = max_doppler_frequency*oversampling_factor/number_of_samples;
-%            frequency_resolution_oversampled = frequency_resolution/oversampling_factor;
-%            normalized_doppler_frequency = max_doppler_frequency / frequency_resolution_oversampled;
-%            
-%         end
-       
        function frequency_response_jakes_spectrum = jakes_spectrum(obj,normalized_doppler,max_doppler_position, number_of_samples)          
            km = max_doppler_position;
            k = 0:number_of_samples-1;
@@ -139,8 +128,7 @@ classdef channel_model < matlab.mixin.SetGet
            Fm(km+2:number_of_samples -km) = 0;
            Fm(number_of_samples  - km+1) = sqrt(km/2*(pi/2-atan((km-1)/sqrt(2*km-1))));
            Fm(number_of_samples  - km+2:number_of_samples ) = sqrt(1./(2*sqrt(1-((number_of_samples -k(number_of_samples  - km+2:number_of_samples))/(normalized_doppler))).^2));
-           frequency_response_jakes_spectrum = Fm;
-           
+           frequency_response_jakes_spectrum = Fm;        
        end
        
        function rayleigh_signal_correct_length = rayleigh_fading_generator(obj)
@@ -164,20 +152,18 @@ classdef channel_model < matlab.mixin.SetGet
            signal_y = gaussian_y .* Fm_padded_normalized;
            
            rayleigh_signal_low_sampling_rate = ifft(signal_x-1i*signal_y);
-           rayleigh_signal_system_sampling_rate = obj.resampler(rayleigh_signal_low_sampling_rate(1:number_of_needed_samples), obj.sampling_rate_system, sampling_rate_gen);
+           rayleigh_signal_low_sampling_rate = rayleigh_signal_low_sampling_rate(1:number_of_needed_samples);
+           rayleigh_signal_system_sampling_rate = obj.resampler(rayleigh_signal_low_sampling_rate, obj.sampling_rate_system, sampling_rate_gen);
            rayleigh_signal_correct_length = rayleigh_signal_system_sampling_rate(1:obj.output_samples);
        end
        
        function response_matrix = timvariant_response(obj,number_of_paths)
-           response_matrix = [];
+           response_matrix = zeros(number_of_paths,obj.output_samples);
            for counter_channels = 1:number_of_paths
-               response_matrix = [response_matrix; obj.rayleigh_fading_generator()]; 
+               response_matrix(counter_channels,:) = obj.rayleigh_fading_generator();
+               disp("path " + counter_channels + " ready")
            end          
-
        end
-       
-       
-
     end
     
 end
