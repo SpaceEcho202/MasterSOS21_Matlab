@@ -36,7 +36,6 @@ classdef NumerlogyRefactoring
             obj.FirstPolynomal                      = [];
             obj.SecondPolynomal                     = [];
             obj.PreambleBoostFactor                 = [];
-            
         end
     end
     
@@ -176,16 +175,23 @@ classdef NumerlogyRefactoring
         % symbols in a timesignal
         function IFFT = time_transform(varargin)
             if (nargin ~= 1)
+                if strcmp(varargin{1},'preamble')
+                    [ResourceBlockCount_, Size_] = resource_blocks(varargin{2});
+                    SymbolsPerResourceElement_ = 2;
+                    IndexPush = 1;
+                else
                 [ResourceBlockCount_, Size_, ...
-                    SymbolsPerResourceElement_] = varargin{1,2:4};
+                    SymbolsPerResourceElement_] = varargin{1,2:4};               
+                end
             else
+                IndexPush = 0;
                 [ResourceBlockCount_, Size_] = resource_blocks(varargin{:});
-                SymbolsPerResourceElement_ = varargin{1}.SymbolsPerResourceElement;
+                SymbolsPerResourceElement_ = varargin{1}.SymbolsPerResourceElement;               
             end
             VirtualSubcarrierCount = Size_-ResourceBlockCount_...
-                *varargin{1}.SubcarrierPerRescourceBlock;
+                *varargin{1+IndexPush}.SubcarrierPerRescourceBlock;
             if strcmp(varargin{1},'preamble')
-                SymbolAllocation = preamble_allocater(varargin{:});
+                SymbolAllocation = preamble_allocater(varargin{2});
             else
                 SymbolAllocation = symbol_allocater(varargin{:});
             end
@@ -231,28 +237,47 @@ classdef NumerlogyRefactoring
             PreambleAllocation = [PreambleVectorOne_;PreambleVectorTwo_];
         end
     end
+    
     methods
         function TxFrame = frame_creator(varargin)
            if (nargin ~= 1)
                TxFrame = varargin{1,2};
            else
-               TimePreamble = time_transform('pramble', varargin{:});
+               TimePreamble = time_transform('preamble', varargin{:});
                TimePayload = time_transform(varargin{:});
+               TxFrame = [TimePreamble; TimePayload];
            end
-           TxFrame = [TimePreamble, TimePayload];
         end
     end
+    
     methods
         % Method which adds a cyclic extension to each ofdmSymbol
         function TimeSignalCP = cycle_prefixer(varargin)
             if (nargin ~= 1)
                 [TimeSignal_, CyclicPrefixLength_]= varargin{1,2:3};
             else
-                TimeSignal_ = time_transform(varargin{:});
+                TimeSignal_ = frame_creator(varargin{:});
                 CyclicPrefixLength_ = varargin{1}.CyclicPrefixLength;
             end
             SamplesPerCyclePrefix  = length(TimeSignal_)*CyclicPrefixLength_;
             TimeSignalCP = [TimeSignal_(:,(end-SamplesPerCyclePrefix+1):end), TimeSignal_];
+        end
+    end
+    methods 
+        function show_goldsequence(varargin)
+            [c, x1, x2] = gold_sequencer(varargin{:});
+            subplot(2,2,1)
+            stem(linspace(0,length(x1),length(x1)),x1),xlim([0 length(x1)]),
+            title('First Sequence'),xlabel('samples')
+            subplot(2,2,2)
+            stem(linspace(0,length(x2),length(x2)),x2),xlim([0 length(x2)]),
+            title('Second Sequence'),xlabel('samples')
+            subplot(2,2,3)
+            stem(linspace(0,length(c),length(c)),c),xlim([0 length(c)]),
+            title('GoldSequence'), xlabel('samples')
+            subplot(2,2,4)
+            stem(linspace(0,2*length(c),2*length(c)-1), abs(2/length(c)*xcorr(c))),
+            title('XCorr Goldsequence'), xlim([0 2*length(c)])       
         end
     end
 end

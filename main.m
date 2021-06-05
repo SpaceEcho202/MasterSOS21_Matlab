@@ -2,6 +2,8 @@
 clc
 clear all
 Simulation = NumerlogyRefactoring;
+Simulation.Bandwidth = 10e6;
+Simulation.show_goldsequence();
 tic;
-Simulation.frame_creator();
+TxFrameCP = Simulation.cycle_prefixer();
 toc;
