@@ -180,13 +180,13 @@ classdef NumerlogyRefactoring
                     SymbolsPerResourceElement_ = 2;
                     IndexPush = 1;
                 else
-                [ResourceBlockCount_, Size_, ...
-                    SymbolsPerResourceElement_] = varargin{1,2:4};               
+                    [ResourceBlockCount_, Size_, ...
+                        SymbolsPerResourceElement_] = varargin{1,2:4};
                 end
             else
                 IndexPush = 0;
                 [ResourceBlockCount_, Size_] = resource_blocks(varargin{:});
-                SymbolsPerResourceElement_ = varargin{1}.SymbolsPerResourceElement;               
+                SymbolsPerResourceElement_ = varargin{1}.SymbolsPerResourceElement;
             end
             VirtualSubcarrierCount = Size_-ResourceBlockCount_...
                 *varargin{1+IndexPush}.SubcarrierPerRescourceBlock;
@@ -240,13 +240,13 @@ classdef NumerlogyRefactoring
     
     methods
         function TxFrame = frame_creator(varargin)
-           if (nargin ~= 1)
-               TxFrame = varargin{1,2};
-           else
-               TimePreamble = time_transform('preamble', varargin{:});
-               TimePayload = time_transform(varargin{:});
-               TxFrame = [TimePreamble; TimePayload];
-           end
+            if (nargin ~= 1)
+                TxFrame = varargin{1,2};
+            else
+                TimePreamble = time_transform('preamble', varargin{:});
+                TimePayload = time_transform(varargin{:});
+                TxFrame = [TimePreamble; TimePayload];
+            end
         end
     end
     
@@ -263,7 +263,7 @@ classdef NumerlogyRefactoring
             TimeSignalCP = [TimeSignal_(:,(end-SamplesPerCyclePrefix+1):end), TimeSignal_];
         end
     end
-    methods 
+    methods
         function show_goldsequence(varargin)
             [c, x1, x2] = gold_sequencer(varargin{:});
             subplot(2,2,1)
@@ -277,7 +277,14 @@ classdef NumerlogyRefactoring
             title('GoldSequence'), xlabel('samples')
             subplot(2,2,4)
             stem(linspace(0,2*length(c),2*length(c)-1), abs(2/length(c)*xcorr(c))),
-            title('XCorr Goldsequence'), xlim([0 2*length(c)])       
+            title('XCorr Goldsequence'), xlim([0 2*length(c)])
+        end
+    end
+    methods
+        function show_grid(varargin)
+            TxFrame = frame_creator(varargin{:});
+            TimeAxis = linspace(0,1/15e3*size(TxFrame,1),size(TxFrame,2));
+            SubcarrierCount = linspace(-(size(TxFrame,2)/2),(size(TxFrame,2)/2)-1,size(TxFrame,2));
         end
     end
 end
