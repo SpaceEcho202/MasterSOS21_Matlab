@@ -266,6 +266,7 @@ classdef NumerlogyRefactoring
     methods
         function show_goldsequence(varargin)
             [c, x1, x2] = gold_sequencer(varargin{:});
+            figure;
             subplot(2,2,1)
             stem(linspace(0,length(x1),length(x1)),x1),xlim([0 length(x1)]),
             title('First Sequence'),xlabel('samples')
@@ -283,8 +284,31 @@ classdef NumerlogyRefactoring
     methods
         function show_grid(varargin)
             TxFrame = frame_creator(varargin{:});
-            TimeAxis = linspace(0,1/15e3*size(TxFrame,1),size(TxFrame,2));
-            SubcarrierCount = linspace(-(size(TxFrame,2)/2),(size(TxFrame,2)/2)-1,size(TxFrame,2));
+            TxFrame = [TxFrame; TxFrame(9,:)];
+            TimeAxis = linspace(0, (1/varargin{:}.SubcarrierSpacing)...
+                *(size(TxFrame,1)-1), size(TxFrame,1));
+            TimeAxisNorm = TimeAxis/1e-6;
+            SubcarrierCount = linspace(-(size(TxFrame,2)/2),...
+                (size(TxFrame,2)/2)-1,size(TxFrame,2));
+            [TimeAxisNorm, SubcarrierCount] = meshgrid(TimeAxisNorm, SubcarrierCount);
+            TxGrid = fft(TxFrame,[],2);
+            figure;
+            surf(TimeAxisNorm', SubcarrierCount', (abs(TxGrid))),
+            view(0,90);
+            title('Time & Freq Grid'),
+            ylabel('Subcarrier [Index]'),
+            xlabel('Time [\mus]')
+            xlim([0, TimeAxisNorm(end)]),
+            xticks((0:(1/varargin{:}.SubcarrierSpacing):TxFrame(end))/1e-6)
+        end
+    end
+    methods
+        function show_alligned_tx_signal(varargin)
+            TxFrame = frame_creator(varargin{:});
+            TxFrameAlligned = reshape(TxFrame, [],1);
+            TimeAxis = linspace(0,1/(varargin{:}.SubcarrierSpacing)...
+                *size(TxFrame,1),length(TxFrameAlligned));
+            plot(TimeAxis, TxFrameAlligned)
         end
     end
 end
