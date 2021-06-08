@@ -6,6 +6,8 @@ classdef NumerlogyRefactoring
     properties
         Bandwidth;                      % Used transmission bandwidth
         ModulationOrder;                % Used for quadrature modulation
+        ModulationOrderFirstPreamble;   % Used for quadrature modulation of first preamble
+        ModulationOrderSecondPreamble;  % Used for quadrature modulation of second pramble
         Coderate;                       % Used code rate *not implemented*
         FrameCount;                     % How many frames will be uses *not implemented*
         SubcarrierPerRescourceBlock ;   % Smallest assignable unit in grid
@@ -25,6 +27,8 @@ classdef NumerlogyRefactoring
         function obj                                = NumerlogyRefactoring()
             obj.Bandwidth                           = 1.4e6;
             obj.ModulationOrder                     = 4;
+            obj.ModulationOrderFirstPreamble        = 64;
+            obj.ModulationOrderSecondPreamble       = 32;
             obj.Coderate                            = [];
             obj.FrameCount                          = 1;
             obj.SubcarrierPerRescourceBlock         = 12;
@@ -208,9 +212,15 @@ classdef NumerlogyRefactoring
             if (nargin ~= 2)
                 [GoldSequence_, ModulationOrder_, Size_] = varargin{1,2:4};
             else
-                ModulationOrder_ = 4;
-                GoldSequence_ = gold_sequencer(ModulationOrder_ ,varargin{:});
-                Size_ = resource_blocks(varargin{2})*varargin{2}.SubcarrierPerRescourceBlock;
+                if (strcmp(varargin{1},'first_preamble'))
+                    ModulationOrder_ = varargin{2}.ModulationOrderFirstPreamble;
+                    GoldSequence_ = gold_sequencer(ModulationOrder_ ,varargin{:});
+                    Size_ = resource_blocks(varargin{2})*varargin{2}.SubcarrierPerRescourceBlock;
+                else
+                    ModulationOrder_ = varargin{2}.ModulationOrderSecondPreamble;
+                    GoldSequence_ = gold_sequencer(ModulationOrder_ ,varargin{:});
+                    Size_ = resource_blocks(varargin{2})*varargin{2}.SubcarrierPerRescourceBlock;
+                end             
             end
             ComplexSymbols = symbol_mapper(ModulationOrder_,...
                 GoldSequence_, varargin{:});
@@ -260,9 +270,10 @@ classdef NumerlogyRefactoring
                 CyclicPrefixLength_ = varargin{1}.CyclicPrefixLength;
             end
             SamplesPerCyclePrefix  = length(TimeSignal_)*CyclicPrefixLength_;
-            TimeSignalCP = [TimeSignal_(:,(end-SamplesPerCyclePrefix+1):end), TimeSignal_];
+            TimeSignalCP = [TimeSignal_(:,(end-SamplesPerCyclePrefix+1):end), TimeSignal_];     
         end
     end
+    
     methods
         function show_goldsequence(varargin)
             [c, x1, x2] = gold_sequencer(varargin{:});
@@ -281,34 +292,60 @@ classdef NumerlogyRefactoring
             title('XCorr Goldsequence'), xlim([0 2*length(c)])
         end
     end
+    
     methods
         function show_grid(varargin)
             TxFrame = frame_creator(varargin{:});
             TxFrame = [TxFrame; TxFrame(9,:)];
             TimeAxis = linspace(0, (1/varargin{:}.SubcarrierSpacing)...
                 *(size(TxFrame,1)-1), size(TxFrame,1));
-            TimeAxisNorm = TimeAxis/1e-6;
+            TimeAxisNorm = TimeAxis/1e-6; % normalized to mircoseconds *Maybe implement normalization as parameter*
             SubcarrierCount = linspace(-(size(TxFrame,2)/2),...
                 (size(TxFrame,2)/2)-1,size(TxFrame,2));
             [TimeAxisNorm, SubcarrierCount] = meshgrid(TimeAxisNorm, SubcarrierCount);
-            TxGrid = fft(TxFrame,[],2);
-            figure;
+            TxGrid = fft(TxFrame,[],2);           
+            TxGrid( abs(TxGrid) <=  1e-6) = 0;
+            figure;            
+            subplot(1,2,1)
             surf(TimeAxisNorm', SubcarrierCount', (abs(TxGrid))),
+            colorbar
             view(0,90);
-            title('Time & Freq Grid'),
+            title('Time & Freq Grid Magnitude '),
+            ylabel('Subcarrier [Index]'),
+            xlabel('Time [\mus]')
+            xlim([0, TimeAxisNorm(end)]),          
+            xticks((0:(1/varargin{:}.SubcarrierSpacing):TxFrame(end))/1e-6)                          
+            subplot(1,2,2)
+            surf(TimeAxisNorm', SubcarrierCount', atan2(imag(TxGrid),real(TxGrid))),
+            colorbar('Ticks',[-pi*3/4, -pi/2, -pi/4, 0, pi/4, pi/2, pi*3/4],...
+            'TickLabels',{'-\pi3/4','-\pi/2','-\pi/4','0','\pi/4','\pi/2','\pi3/4'})
+            view(0,90);
+            title('Time & Freq Grid Phase'),
             ylabel('Subcarrier [Index]'),
             xlabel('Time [\mus]')
             xlim([0, TimeAxisNorm(end)]),
-            xticks((0:(1/varargin{:}.SubcarrierSpacing):TxFrame(end))/1e-6)
+            xticks((0:(1/varargin{:}.SubcarrierSpacing):TxFrame(end))/1e-6)           
         end
     end
+    
+    methods
+        function show_constellation(varargin)
+            %qammod(d,M,smap,'PlotConstellation',true);
+            % Not implemented yet
+        end
+    end
+    
     methods
         function show_alligned_tx_signal(varargin)
-            TxFrame = frame_creator(varargin{:});
-            TxFrameAlligned = reshape(TxFrame, [],1);
+            TimeSignal = cycle_prefixer(varargin{:})';
+            TxFrameAlligned = reshape(TimeSignal,1,[]);
             TimeAxis = linspace(0,1/(varargin{:}.SubcarrierSpacing)...
-                *size(TxFrame,1),length(TxFrameAlligned));
-            plot(TimeAxis, TxFrameAlligned)
+                *size(TimeSignal,1),length(TxFrameAlligned));
+            TimeAxisNorm = TimeAxis/1e-3; % normalized to milliseconds *Maybe implement normalization as parameter*
+            plot(TimeAxisNorm, abs(TxFrameAlligned)), xlim([0 TimeAxisNorm(end)]),
+            title('Tx Frame + CyclePrefix')
+            ylabel('abs(magnitude)')
+            xlabel('Time [ms]')                    
         end
     end
 end
