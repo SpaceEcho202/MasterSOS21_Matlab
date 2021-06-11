@@ -330,8 +330,8 @@ classdef NumerlogyRefactoring
     
     methods
         function show_constellation(varargin)
-            %qammod(d,M,smap,'PlotConstellation',true);
-            % Not implemented yet
+            ComplexSymbols = symbol_mapper(varargin{:});
+            scatterplot(ComplexSymbols), grid on          
         end
     end
     
@@ -342,6 +342,7 @@ classdef NumerlogyRefactoring
             TimeAxis = linspace(0,1/(varargin{:}.SubcarrierSpacing)...
                 *size(TimeSignal,1),length(TxFrameAlligned));
             TimeAxisNorm = TimeAxis/1e-3; % normalized to milliseconds *Maybe implement normalization as parameter*
+            figure;
             plot(TimeAxisNorm, abs(TxFrameAlligned)), xlim([0 TimeAxisNorm(end)]),
             title('Tx Frame + CyclePrefix')
             ylabel('abs(magnitude)')

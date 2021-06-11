@@ -10,4 +10,5 @@ Simulation.ModulationOrderFirstPreamble = 64;
 Simulation.ModulationOrderSecondPreamble = 32;
 Simulation.show_alligned_tx_signal();
 Simulation.show_grid();
+Simulation.show_constellation();
 toc;
