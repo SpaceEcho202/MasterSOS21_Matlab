@@ -328,6 +328,13 @@ classdef NumerlogyRefactoring
         end
     end
     
+    methods 
+        function TxTimeSignalCP = tx_alligned_signal(varargin)
+            TimeSignal = cycle_prefixer(varargin{:})';
+            TxTimeSignalCP = reshape(TimeSignal,1,[]);
+        end
+    end
+    
     methods
         function show_constellation(varargin)
             ComplexSymbols = symbol_mapper(varargin{:});
