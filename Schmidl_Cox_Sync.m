@@ -3,47 +3,50 @@ classdef Schmidl_Cox_Sync
     %   Detailed explanation goes here
     
     properties
-        PreambleLength;
+        TxInfo;
+        Size;
         RxSignal;
     end
     methods
         % Is used as constructor to predefine class variables
         function obj = Schmidl_Cox_Sync()
-            obj.PreambleLength = [];
-            obj.RxSignal       = [];
+            
+            obj.TxInfo      = NumerlogyRefactoring();
+            obj.Size        = [];
+            obj.RxSignal    = [];
         end
     end
     methods
-        function P_d = preamble_corr(varargin)
-            r = varargin{:}.RxSignal;
-            PP = 0;
-            RR = 0;
-            L = varargin{:}.PreambleLength;
-            for m = 1:L
-                P = sum(conj(r(m))*r(m+L));
-                P = P+PP;
-                R = sum(abs(r(m+L))^2);
-                R = R+RR;
-            end
-            R = RR;
-            P = PP;
-            for d = 1:length(r)-2*L
-                P(d+1) = P(d)+conj(r(d+L))*r(d+2*L)...
-                    -conj(r(d))*r(d+L);
-                R(d+1) = R(d)+(abs(r(d+(2*L))).^2)...
-                    -abs(r(d+L))^2;
-            end
-            M = (abs(P).^2)./((R).^2);
-            P_d = M;
+        function M_d = time_metric_creator(varargin)
+            RxSequence = varargin{:}.RxSignal;
+            denumerator = [1, -1];
+            numerator = [1, zeros(1,varargin{:}.Size/2-2), -1];
+            SequenceOne = RxSequence(varargin{:}.Size/2+1:end);
+            SequenceTwo = RxSequence(1:end-varargin{:}.Size/2);
+            Correlation = [zeros(1, varargin{:}.Size/2),...
+                conj(SequenceOne).*SequenceTwo];
+            P_d = filter(numerator, denumerator, Correlation);
+            R_d = filter(numerator, denumerator, abs(RxSequence).^2);
+            M_d = (abs(P_d).^2)./((R_d).^2);
         end
     end
     
     methods
-        function show_metric(varargin)
+        function [TimeAxisNorm, SampleAxis] = show_metric(varargin)
+            M_d = time_metric_creator(varargin{:});
+            dt = (1/varargin{:}.TxInfo.SubcarrierSpacing)/...
+                varargin{:}.Size;
+            TimeAxis = linspace(0,dt*(length(M_d)), length(M_d));
+            TimeAxisNorm = TimeAxis/1e-6; % normalized to mircoseconds
+            SampleAxis = linspace(0,length(M_d), length(M_d));
+            
             figure;
-            P_d = preamble_corr(varargin{:});
-            plot(linspace(0,length(P_d),length(P_d)), P_d)
+            plot(SampleAxis, M_d), xlabel('Sample [Index]'), ylabel('M_d'),
+            ax = gca;
+            ax.XAxis.MinorTick = 'on';
+            ax.XAxis.MinorTickValues = 0:200:SampleAxis(end);
+            ylim([0 1.2]), xlim([0 SampleAxis(end)])
         end
     end
 end
-   
+  
