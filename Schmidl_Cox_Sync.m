@@ -76,18 +76,23 @@ classdef Schmidl_Cox_Sync
     
     methods
         function [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
-                , M_d, P_d] = thresholder(varargin)
-            [M_d, ~, P_d] = time_metric_creator(varargin{:});
-            Test;
-            Threshold = 1.0;
-            [~,Index] = find(M_d >= Threshold);
-            PlateauStartIndex = Index(1);
-            PlateauEndIndex = Index(end);
-            PlateauCenterIndex = ceil((PlateauEndIndex - PlateauStartIndex)/2);
+                , M_d, P_d]      = thresholder(varargin)
+            [M_d, ~, P_d]        = time_metric_creator(varargin{:});
+           
+            M_d_temp             = M_d;
+            [maxValue, maxIndex] = max(M_d_temp);
+            [~, leftEdgeIndex]   = min(abs(M_d_temp-(.9*maxValue)));
+            M_d_temp(1:maxIndex) = NaN;
+            [~, rightEdgeIndex]  = min(abs(M_d_temp-(.9*maxValue)));
+            
+            PlateauStartIndex    = leftEdgeIndex;
+            PlateauEndIndex      = rightEdgeIndex;
+            PlateauCenterIndex   = ceil(((PlateauEndIndex - PlateauStartIndex)/2) + PlateauStartIndex);
+            
             [PlateauLeftEdge,PlateauCenter, PlateauRightEdge] = deal(NaN(1,length(M_d)));       
             [PlateauLeftEdge(PlateauStartIndex),...
                 PlateauRightEdge(PlateauEndIndex), ...
-                PlateauCenter(PlateauStartIndex + PlateauCenterIndex)] = deal(Threshold);
+                PlateauCenter(PlateauStartIndex + PlateauCenterIndex)] = deal(maxValue);
         end
     end
     methods
@@ -125,7 +130,7 @@ classdef Schmidl_Cox_Sync
             ax = gca;
             ax.XAxis.MinorTick = 'on';
             ax.XAxis.MinorTickValues = 0:200:SampleAxis(end);
-            ylim([0 1.2]), xlim([0 SampleAxis(end)]), xlim([0 2*varargin{:}.Size]),
+            ylim([0 max(PlateauRightEdge)]), xlim([0 SampleAxis(end)]), xlim([0 2*varargin{:}.Size]),
             title('S&C Timing Metric')
             hold on,
             stem(SampleAxis, PlateauLeftEdge,'.')
