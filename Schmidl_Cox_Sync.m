@@ -78,6 +78,7 @@ classdef Schmidl_Cox_Sync
         function [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
                 , M_d, P_d] = thresholder(varargin)
             [M_d, ~, P_d] = time_metric_creator(varargin{:});
+            Test;
             Threshold = 1.0;
             [~,Index] = find(M_d >= Threshold);
             PlateauStartIndex = Index(1);
