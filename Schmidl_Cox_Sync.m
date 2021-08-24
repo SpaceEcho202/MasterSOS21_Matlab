@@ -66,11 +66,10 @@ classdef Schmidl_Cox_Sync
     end
     methods
         function CFO = cfo_estimator(varargin)
-            [PlateauLeftEdge, PlateauCenter, PlateauRightEdge... 
-                , ~, P_d] = thresholder(varargin{:});
-            ComplexValue = P_d(~isnan(PlateauRightEdge));      
-            Phase = atan2(imag(ComplexValue), real(ComplexValue));
-            CFO = 1-(Phase/pi);
+            [~, PlateauCenter, ~, ~, P_d] = thresholder(varargin{:});
+            ComplexValue = P_d(~isnan(PlateauCenter));      
+            Phase = atan(imag(ComplexValue)/ real(ComplexValue));
+            CFO = Phase/(pi);
         end
     end
     
@@ -91,12 +90,12 @@ classdef Schmidl_Cox_Sync
             [PlateauLeftEdge, PlateauCenter, PlateauRightEdge] = deal(NaN(1,length(M_d)));       
             [PlateauLeftEdge(PlateauStartIndex),...
                 PlateauRightEdge(PlateauEndIndex), ...
-                PlateauCenter(PlateauStartIndex + PlateauCenterIndex)] = deal(maxValue);
+                PlateauCenter(PlateauCenterIndex)] = deal(maxValue);
         end
     end
     methods
         function show_lookup_table(varargin)
-            [M_d_CalMean, M_d_CalStd,...
+            [M_d_CalMean, ~,...
                 M_d_mean_n, M_d_mean_p,...
                 SnrInDbs, M_d_Send] = sync_calibration(varargin{:});
             figure;
