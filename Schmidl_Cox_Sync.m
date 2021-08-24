@@ -80,16 +80,15 @@ classdef Schmidl_Cox_Sync
             [M_d, ~, P_d]        = time_metric_creator(varargin{:});
            
             M_d_temp             = M_d;
-            [maxValue, maxIndex] = max(M_d_temp);
-            [~, leftEdgeIndex]   = min(abs(M_d_temp-(.9*maxValue)));
-            M_d_temp(1:maxIndex) = NaN;
-            [~, rightEdgeIndex]  = min(abs(M_d_temp-(.9*maxValue)));
+            [maxValue, maxIndex] = max(M_d);
+            [~, leftEdgeIndex]   = min(abs(M_d_temp(1:maxIndex)-(.9*maxValue)));
+            [~, rightEdgeIndex]  = min(abs(M_d_temp(maxIndex:end)-(.9*maxValue)));
             
             PlateauStartIndex    = leftEdgeIndex;
-            PlateauEndIndex      = rightEdgeIndex;
-            PlateauCenterIndex   = ceil(((PlateauEndIndex - PlateauStartIndex)/2) + PlateauStartIndex);
+            PlateauEndIndex      = rightEdgeIndex + maxIndex;
+            PlateauCenterIndex   = ceil((PlateauEndIndex + PlateauStartIndex)/2);
             
-            [PlateauLeftEdge,PlateauCenter, PlateauRightEdge] = deal(NaN(1,length(M_d)));       
+            [PlateauLeftEdge, PlateauCenter, PlateauRightEdge] = deal(NaN(1,length(M_d)));       
             [PlateauLeftEdge(PlateauStartIndex),...
                 PlateauRightEdge(PlateauEndIndex), ...
                 PlateauCenter(PlateauStartIndex + PlateauCenterIndex)] = deal(maxValue);

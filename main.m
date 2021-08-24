@@ -15,7 +15,7 @@ TxSignal                                    = TxStructure.tx_alligned_signal(); 
 cfo                                         = .01/Size;                                     % set carrier frequency offset
 N                                           = linspace(0,length(TxSignal),length(TxSignal));% samples in range length tx signal
 SyncStructure                               = Schmidl_Cox_Sync();                           % create synchronizer object
-SyncStructure.RxSignal                      = awgn(TxSignal.*exp(1.i*2*pi*cfo*N),15);       % add lo-offset and awgn to tx signal 
+SyncStructure.RxSignal                      = awgn(TxSignal.*exp(1.i*2*pi*cfo*N),10);       % add lo-offset and awgn to tx signal 
 [~, SyncStructure.Size]                     = TxStructure.resource_blocks();                % 
 toc;
 SyncStructure.cfo_estimator()
