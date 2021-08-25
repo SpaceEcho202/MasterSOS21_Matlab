@@ -147,14 +147,14 @@ classdef Schmidl_Cox_Sync
             yticks([-pi -pi*3/4, -pi/2, 0, pi/2, pi*3/4 pi]) 
             yticklabels({'-\pi', '-\pi3/4', '-\pi/2','0', '\pi/2', '\pi3/4', '\pi'})
             title('S&C Phase')
-            hold on         
-            Sign = -sign(cfo_estimator(varargin{:}));
-            stem(SampleAxis, PlateauLeftEdge*pi*Sign,'.')
-            stem(SampleAxis, PlateauCenter*pi*Sign,'.')
-            stem(SampleAxis, PlateauRightEdge*pi*Sign,'.')
+            hold on
+            sign = -sign(cfo_estimator(varargin{:}));
+            stem(SampleAxis, PlateauLeftEdge*pi*sign,'.')
+            stem(SampleAxis, PlateauCenter*pi*sign,'.')
+            stem(SampleAxis, PlateauRightEdge*pi,'.')
             legend('Phase','Left Edge',...
                 'Centre AWGN Syncpoint', ...
-                'Right Edge Frame Syncpoint','Location', 'northwest')
+                'Right Edge Frame Syncpoint','Location', 'southeast')
             hold off
         end
     end
