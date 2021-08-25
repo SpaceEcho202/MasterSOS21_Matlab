@@ -66,7 +66,7 @@ classdef Schmidl_Cox_Sync
     end
     methods
         function CFO = cfo_estimator(varargin)
-            [~, PlateauCenter, ~, ~, P_d] = thresholder(varargin{:});
+            [~, PlateauCenter, ~, ~, P_d] = ninety_percent_detector(varargin{:});
             ComplexValue = P_d(~isnan(PlateauCenter));      
             Phase = atan(imag(ComplexValue)/ real(ComplexValue));
             CFO = Phase/(pi);
@@ -75,7 +75,7 @@ classdef Schmidl_Cox_Sync
     
     methods
         function [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
-                , M_d, P_d]      = thresholder(varargin)
+                , M_d, P_d]      = ninety_percent_detector(varargin)
             [M_d, ~, P_d]        = time_metric_creator(varargin{:});
            
             M_d_temp             = M_d;
@@ -91,6 +91,14 @@ classdef Schmidl_Cox_Sync
             [PlateauLeftEdge(PlateauStartIndex),...
                 PlateauRightEdge(PlateauEndIndex), ...
                 PlateauCenter(PlateauCenterIndex)] = deal(maxValue);
+        end
+    end
+    methods 
+        function [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
+                , M_d, P_d]      = max_plateau_detector(varargin)
+            [M_d, ~, P_d]        = time_metric_creator(varargin{:});
+            [~, centreIndex]     = argmax()
+            
         end
     end
     methods
@@ -114,7 +122,7 @@ classdef Schmidl_Cox_Sync
     methods
         function [TimeAxisNorm, SampleAxis] = show_metric(varargin)
             [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
-                , M_d, P_d] = thresholder(varargin{:});
+                , M_d, P_d] = ninety_percent_detector(varargin{:});
             dt = (1/varargin{:}.TxInfo.SubcarrierSpacing)/...
                 varargin{:}.Size;
             Phase = atan2(imag(P_d), real(P_d));
@@ -147,14 +155,14 @@ classdef Schmidl_Cox_Sync
             yticks([-pi -pi*3/4, -pi/2, 0, pi/2, pi*3/4 pi]) 
             yticklabels({'-\pi', '-\pi3/4', '-\pi/2','0', '\pi/2', '\pi3/4', '\pi'})
             title('S&C Phase')
-            hold on
-            sign = -sign(cfo_estimator(varargin{:}));
-            stem(SampleAxis, PlateauLeftEdge*pi*sign,'.')
-            stem(SampleAxis, PlateauCenter*pi*sign,'.')
-            stem(SampleAxis, PlateauRightEdge*pi,'.')
+            hold on         
+            Sign = -sign(cfo_estimator(varargin{:}));
+            stem(SampleAxis, PlateauLeftEdge*pi*Sign,'.')
+            stem(SampleAxis, PlateauCenter*pi*Sign,'.')
+            stem(SampleAxis, PlateauRightEdge*pi*Sign,'.')
             legend('Phase','Left Edge',...
                 'Centre AWGN Syncpoint', ...
-                'Right Edge Frame Syncpoint','Location', 'southeast')
+                'Right Edge Frame Syncpoint','Location', 'northwest')
             hold off
         end
     end

@@ -66,7 +66,7 @@ classdef Schmidl_Cox_Sync
     end
     methods
         function CFO = cfo_estimator(varargin)
-            [~, PlateauCenter, ~, ~, P_d] = thresholder(varargin{:});
+            [~, PlateauCenter, ~, ~, P_d] = ninety_percent_detector(varargin{:});
             ComplexValue = P_d(~isnan(PlateauCenter));      
             Phase = atan(imag(ComplexValue)/ real(ComplexValue));
             CFO = Phase/(pi);
@@ -75,7 +75,7 @@ classdef Schmidl_Cox_Sync
     
     methods
         function [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
-                , M_d, P_d]      = thresholder(varargin)
+                , M_d, P_d]      = ninety_percent_detector(varargin)
             [M_d, ~, P_d]        = time_metric_creator(varargin{:});
            
             M_d_temp             = M_d;
@@ -91,6 +91,14 @@ classdef Schmidl_Cox_Sync
             [PlateauLeftEdge(PlateauStartIndex),...
                 PlateauRightEdge(PlateauEndIndex), ...
                 PlateauCenter(PlateauCenterIndex)] = deal(maxValue);
+        end
+    end
+    methods 
+        function [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
+                , M_d, P_d]      = max_plateau_detector(varargin)
+            [M_d, ~, P_d]        = time_metric_creator(varargin{:});
+            [~, centreIndex]     = argmax(M_d)
+            PlateauC
         end
     end
     methods
@@ -114,7 +122,7 @@ classdef Schmidl_Cox_Sync
     methods
         function [TimeAxisNorm, SampleAxis] = show_metric(varargin)
             [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
-                , M_d, P_d] = thresholder(varargin{:});
+                , M_d, P_d] = ninety_percent_detector(varargin{:});
             dt = (1/varargin{:}.TxInfo.SubcarrierSpacing)/...
                 varargin{:}.Size;
             Phase = atan2(imag(P_d), real(P_d));
