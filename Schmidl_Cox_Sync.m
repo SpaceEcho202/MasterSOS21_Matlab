@@ -8,6 +8,7 @@ classdef Schmidl_Cox_Sync
         RxSignal;
         Calibration;
     end
+    
     methods
         % Is used as constructor to predefine class variables
         function obj = Schmidl_Cox_Sync()
@@ -18,33 +19,38 @@ classdef Schmidl_Cox_Sync
             obj.RxSignal    = [];
         end
     end
+    
     methods
         function [M_d_CalMean, M_d_CalStd,...
                 M_d_mean_n, M_d_mean_p,...
                 SnrInDbs, M_d_Send] = sync_calibration(varargin)
-            cal = NumerlogyRefactoring();
-            cal.Bandwidth = 10e6;
-            cal.ModulationOrder = 64;
-            cal.ModulationOrderFirstPreamble = 64;
-            cal.ModulationOrderSecondPreamble = 32;
+            
+            cal                                 = NumerlogyRefactoring();
+            cal.Bandwidth                       = 10e6;
+            cal.ModulationOrder                 = 64;
+            cal.ModulationOrderFirstPreamble    = 64;
+            cal.ModulationOrderSecondPreamble   = 32;
+            
             tic;
             h = waitbar(0,'Calibration please wait...');
-            SnrInDbs = linspace(-10,40,50);          
+            SnrInDbs = linspace(-10,40,50);
             for Index = 1:varargin{:}.Calibration
                 waitbar(Index / varargin{:}.Calibration)
-                TxFrame(Index,:) = cal.tx_alligned_signal();           
+                TxFrame(Index,:) = cal.tx_alligned_signal();
+                
                 for SnrIndex = 1:length(SnrInDbs)
-                    RxFrame = awgn(TxFrame(Index,:), SnrInDbs(SnrIndex));         
+                    RxFrame = awgn(TxFrame(Index,:), SnrInDbs(SnrIndex));
                     varargin{:}.RxSignal = RxFrame;
                     [M_d, ~, ~] = time_metric_creator(varargin{:});
                     M_d_Send(SnrIndex,:) = M_d;
                     M_d_Cal(Index, SnrIndex) = M_d(1150);
                 end
             end
-            M_d_CalMean = mean(M_d_Cal);
-            M_d_CalStd = std(M_d_Cal);
-            M_d_mean_n = M_d_CalMean-(3*M_d_CalStd);
-            M_d_mean_p = M_d_CalMean+(3*M_d_CalStd);
+            
+            M_d_CalMean     = mean(M_d_Cal);
+            M_d_CalStd      = std(M_d_Cal);
+            M_d_mean_n      = M_d_CalMean-(3*M_d_CalStd);
+            M_d_mean_p      = M_d_CalMean+(3*M_d_CalStd);
             close(h)
             toc;
         end
@@ -64,10 +70,17 @@ classdef Schmidl_Cox_Sync
             M_d = (abs(P_d).^2)./((R_d).^2);
         end
     end
+    
     methods
         function CFO = cfo_estimator(varargin)
-            [~, PlateauCenter, ~, ~, P_d] = ninety_percent_detector(varargin{:});
-            ComplexValue = P_d(~isnan(PlateauCenter));      
+            if (strcmp(varargin{2},'ninety_percent_detector'))
+                [~, SyncPoint, ~, ~, P_d] = ninety_percent_detector(varargin{1});            
+            elseif (strcmp(varargin{2},'max_plateau_detector'))
+                [SyncPoint, P_d] = max_plateau_detector(varargin{1});
+            elseif (strcmp(varargin{2},'threshold_detector'))
+                [~, ~, SyncPoint,~, P_d] = thresholder(varargin{1});
+            end
+            ComplexValue = P_d(~isnan(SyncPoint));  
             Phase = atan(imag(ComplexValue)/ real(ComplexValue));
             CFO = Phase/(pi);
         end
@@ -77,7 +90,7 @@ classdef Schmidl_Cox_Sync
         function [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
                 , M_d, P_d]      = ninety_percent_detector(varargin)
             [M_d, ~, P_d]        = time_metric_creator(varargin{:});
-           
+            
             M_d_temp             = M_d;
             [maxValue, maxIndex] = max(M_d);
             [~, leftEdgeIndex]   = min(abs(M_d_temp(1:maxIndex)-(.9*maxValue)));
@@ -87,20 +100,38 @@ classdef Schmidl_Cox_Sync
             PlateauEndIndex      = rightEdgeIndex + maxIndex;
             PlateauCenterIndex   = ceil((PlateauEndIndex + PlateauStartIndex)/2);
             
-            [PlateauLeftEdge, PlateauCenter, PlateauRightEdge] = deal(NaN(1,length(M_d)));       
+            [PlateauLeftEdge, PlateauCenter, PlateauRightEdge] = deal(NaN(1,length(M_d)));
             [PlateauLeftEdge(PlateauStartIndex),...
                 PlateauRightEdge(PlateauEndIndex), ...
                 PlateauCenter(PlateauCenterIndex)] = deal(maxValue);
         end
     end
-    methods 
+    
+    methods
         function [PlateauLeftEdge, PlateauCenter, PlateauRightEdge...
-                , M_d, P_d]      = max_plateau_detector(varargin)
-            [M_d, ~, P_d]        = time_metric_creator(varargin{:});
-            [~, centreIndex]     = argmax(M_d)
-            PlateauC
+                , M_d, P_d] = thresholder(varargin)
+            [M_d, ~, P_d] = time_metric_creator(varargin{:});
+            Threshold = .5;
+            [~,Index] = find(M_d >= Threshold);
+            PlateauStartIndex = Index(1);
+            PlateauEndIndex = Index(end);
+            PlateauCenterIndex = ceil((PlateauEndIndex - PlateauStartIndex)/2);
+            [PlateauLeftEdge,PlateauCenter, PlateauRightEdge] = deal(NaN(1,length(M_d)));       
+            [PlateauLeftEdge(PlateauStartIndex),...
+                PlateauRightEdge(PlateauEndIndex), ...
+                PlateauCenter(PlateauStartIndex + PlateauCenterIndex)] = deal(Threshold);
         end
     end
+    
+    methods
+        function [PlateauCenter, P_d] = max_plateau_detector(varargin)
+            [M_d, ~, P_d]               = time_metric_creator(varargin{:});
+            [MaxValue, CenterIndex]     = max(M_d);
+            PlateauCenter               = deal(NaN(1,length(M_d)));
+            PlateauCenter(CenterIndex)  = deal(MaxValue);
+        end
+    end
+    
     methods
         function show_lookup_table(varargin)
             [M_d_CalMean, ~,...
@@ -109,12 +140,12 @@ classdef Schmidl_Cox_Sync
             figure;
             subplot(1,2,1)
             plot(SnrInDbs, M_d_CalMean,'b', SnrInDbs, M_d_mean_n, '--r',...
-                 SnrInDbs ,M_d_mean_p, '--r'), ylim([0 1]), xlabel('SNR [dB]')
+                SnrInDbs ,M_d_mean_p, '--r'), ylim([0 1]), xlabel('SNR [dB]')
             ylabel('Threshold'), title('S&C vs. SNR'), legend('M_d mean', 'M_d +std'...
                 ,'M_d -std','Location', 'southwest')
             subplot(1,2,2)
             plot(linspace(0,length(M_d_Send),length(M_d_Send)),M_d_Send),
-            xlim([0 2*varargin{:}.Size]), xlabel('Sample [Index]'), 
+            xlim([0 2*varargin{:}.Size]), xlabel('Sample [Index]'),
             ylabel('Threshold'), title('S&C Timing Metric vs. SNR')
         end
     end
@@ -152,10 +183,10 @@ classdef Schmidl_Cox_Sync
             ax.XAxis.MinorTick = 'on';
             ax.XAxis.MinorTickValues = 0:200:SampleAxis(end);
             ylim([-pi pi]), xlim([0 SampleAxis(end)]), xlim([0 2*varargin{:}.Size]),
-            yticks([-pi -pi*3/4, -pi/2, 0, pi/2, pi*3/4 pi]) 
+            yticks([-pi -pi*3/4, -pi/2, 0, pi/2, pi*3/4 pi])
             yticklabels({'-\pi', '-\pi3/4', '-\pi/2','0', '\pi/2', '\pi3/4', '\pi'})
             title('S&C Phase')
-            hold on         
+            hold on
             Sign = -sign(cfo_estimator(varargin{:}));
             stem(SampleAxis, PlateauLeftEdge*pi*Sign,'.')
             stem(SampleAxis, PlateauCenter*pi*Sign,'.')
