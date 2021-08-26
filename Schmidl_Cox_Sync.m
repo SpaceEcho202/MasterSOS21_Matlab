@@ -78,7 +78,7 @@ classdef Schmidl_Cox_Sync
             elseif (strcmp(varargin{2},'max_plateau_detector'))
                 [SyncPoint, P_d] = max_plateau_detector(varargin{1});
             elseif (strcmp(varargin{2},'threshold_detector'))
-                [~, ~, SyncPoint,~, P_d] = thresholder(varargin{1});
+                [~, SyncPoint, ~,~, P_d] = thresholder(varargin{1});
             end
             ComplexValue = P_d(~isnan(SyncPoint));  
             Phase = atan(imag(ComplexValue)/ real(ComplexValue));

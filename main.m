@@ -12,12 +12,13 @@ TxStructure.ModulationOrderSecondPreamble   = 32;                               
 TxSignal                                    = TxStructure.tx_alligned_signal();         % get tx signal from numerlogy settings 
 %% Synchronize structure
 [~, Size]                                   = TxStructure.resource_blocks();
-cfo_temp                                    = .05;
+cfo_temp                                    = .02;
 cfo                                         = -cfo_temp/Size;                                  % set carrier frequency offset
 N                                           = linspace(0,length(TxSignal),length(TxSignal));   % samples in range length tx signal
-Measurements                                = 100;                                             % measure count for sync validation            
-SnrInDb                                     = linspace(10, 40, 31);                            % snr count for sync validation 
-sigma_s2                                    = mean(abs(TxSignal.^2));
+Measurements                                = 1000;                                              % measure count for sync validation            
+SnrInDb                                     = linspace(30, 40, 31);                         % snr count for sync validation 
+PreambleLength                              = Size + (TxStructure.CyclicPrefixLength*Size);
+sigma_s2                                    = mean(abs(TxSignal(:,PreambleLength).^2));
 sigma_n2                                    = sigma_s2 * 10.^(-SnrInDb/10);
 sigma_i2                                    = pi^2/12*sigma_s2*sin(pi*cfo_temp).^2;
 SINR_reduction                              = 10*log10(1 + sigma_i2 ./ sigma_n2);
@@ -41,7 +42,7 @@ CFO_Error_mean_3                            = mean(CFO_Error_threshold,1);
 
 semilogy(SnrInDb, CFO_Error_mean_1,'b-*',...
          SnrInDb, CFO_Error_mean_2,'r-*',...
-         SnrInDb, CFO_Error_mean_3,'g-*',...
+         SnrInDb, CFO_Error_mean_3,'m-*',...
             'MarkerIndices', 1:1:length(SnrInDb))
         
      xlabel('SNR [dB]')
@@ -49,7 +50,8 @@ semilogy(SnrInDb, CFO_Error_mean_1,'b-*',...
      title(['CFO Measurements: ' num2str(Measurements)])
      legend('Sync 90% Detect Error_{mean}',...
             'Sync Max Detect Error_{mean}',...
-            'Sync Thr Detect Error_{mean}','southwest')
+            'Sync Thr Detect Error_{mean}',...
+            'Location', 'southwest')
      grid on
      
 toc;
